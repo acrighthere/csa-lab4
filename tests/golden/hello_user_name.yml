@@ -1,0 +1,739 @@
+in_source: |
+  %define FLAG_DONE   0x200
+  %define BUF_LEN     0x201
+  %define BUF_START   0x202
+
+  .org 0x000
+      .word isr_input
+
+  .org 0x010
+  _start:
+      DI
+      ; Initialize
+      PUSH 0
+      STOREA FLAG_DONE
+      PUSH 0
+      STOREA BUF_LEN
+
+      ; Print prompt
+      PUSH msg_prompt
+      CALL print_str
+
+      EI
+
+  .wait:
+      LOADA FLAG_DONE
+      JZ .wait
+
+      DI
+      LOADA BUF_LEN
+      PUSH BUF_START
+      ADD
+      PUSH 0
+      SWAP
+      STORE
+
+      PUSH msg_hello
+      CALL print_str
+
+
+      PUSH BUF_START
+      CALL print_str
+
+      PUSH msg_suffix
+      CALL print_str
+
+      HALT
+
+  print_str:
+  .ps_loop:
+      DUP
+      LOAD
+      DUP
+      JZ .ps_done
+      OUT 1
+      PUSH 1
+      ADD
+      JMP .ps_loop
+  .ps_done:
+      POP
+      POP
+      RET
+
+  isr_input:
+      IN 0
+
+      DUP
+      PUSH 10
+      EQ
+      JNZ .newline
+
+      DUP
+      PUSH 13
+      EQ
+      JNZ .newline
+
+      DUP
+      JZ .eof_char
+
+      LOADA BUF_LEN
+      DUP
+      PUSH 253
+      GT
+      JNZ .skip_store
+      PUSH BUF_START
+      ADD
+      SWAP
+      STORE
+      LOADA BUF_LEN
+      PUSH 1
+      ADD
+      STOREA BUF_LEN
+      IRET
+
+  .skip_store:
+      POP
+      POP
+      IRET
+
+  .newline:
+      POP
+      PUSH 1
+      STOREA FLAG_DONE
+      IRET
+
+  .eof_char:
+      POP
+      PUSH 1
+      STOREA FLAG_DONE
+      IRET
+
+  .org 0x300
+  msg_prompt:
+      .str "What is your name?\n"
+  msg_hello:
+      .str "Hello, "
+  msg_suffix:
+      .str "!\n"
+machine_code: |2
+   Address         HEX  Mnemonic
+  ------------------------------------------------------------
+         0          33  .word isr_input
+        16    61000000  DI
+        17     1000000  PUSH 0(=0x0000)
+        18    13000200  STOREA 0x200(=0x0200)
+        19     1000000  PUSH 0(=0x0000)
+        20    13000201  STOREA 0x201(=0x0201)
+        21     1000300  PUSH msg_prompt(=0x0300)
+        22    45000028  CALL print_str(=0x0028)
+        23    60000000  EI
+        24    12000200  LOADA 0x200(=0x0200)
+        25    41000018  JZ .wait(=0x0018)
+        26    61000000  DI
+        27    12000201  LOADA 0x201(=0x0201)
+        28     1000202  PUSH 0x202(=0x0202)
+        29    20000000  ADD
+        30     1000000  PUSH 0(=0x0000)
+        31     4000000  SWAP
+        32    11000000  STORE
+        33     1000314  PUSH msg_hello(=0x0314)
+        34    45000028  CALL print_str(=0x0028)
+        35     1000202  PUSH 0x202(=0x0202)
+        36    45000028  CALL print_str(=0x0028)
+        37     100031c  PUSH msg_suffix(=0x031c)
+        38    45000028  CALL print_str(=0x0028)
+        39    47000000  HALT
+        40     3000000  DUP
+        41    10000000  LOAD
+        42     3000000  DUP
+        43    41000030  JZ .ps_done(=0x0030)
+        44    51000001  OUT 1(=0x0001)
+        45     1000001  PUSH 1(=0x0001)
+        46    20000000  ADD
+        47    40000028  JMP .ps_loop(=0x0028)
+        48     2000000  POP
+        49     2000000  POP
+        50    46000000  RET
+        51    50000000  IN 0(=0x0000)
+        52     3000000  DUP
+        53     100000a  PUSH 10(=0x000a)
+        54    30000000  EQ
+        55    4200004f  JNZ .newline(=0x004f)
+        56     3000000  DUP
+        57     100000d  PUSH 13(=0x000d)
+        58    30000000  EQ
+        59    4200004f  JNZ .newline(=0x004f)
+        60     3000000  DUP
+        61    41000053  JZ .eof_char(=0x0053)
+        62    12000201  LOADA 0x201(=0x0201)
+        63     3000000  DUP
+        64     10000fd  PUSH 253(=0x00fd)
+        65    34000000  GT
+        66    4200004c  JNZ .skip_store(=0x004c)
+        67     1000202  PUSH 0x202(=0x0202)
+        68    20000000  ADD
+        69     4000000  SWAP
+        70    11000000  STORE
+        71    12000201  LOADA 0x201(=0x0201)
+        72     1000001  PUSH 1(=0x0001)
+        73    20000000  ADD
+        74    13000201  STOREA 0x201(=0x0201)
+        75    62000000  IRET
+        76     2000000  POP
+        77     2000000  POP
+        78    62000000  IRET
+        79     2000000  POP
+        80     1000001  PUSH 1(=0x0001)
+        81    13000200  STOREA 0x200(=0x0200)
+        82    62000000  IRET
+        83     2000000  POP
+        84     1000001  PUSH 1(=0x0001)
+        85    13000200  STOREA 0x200(=0x0200)
+        86    62000000  IRET
+       768          57  .str 'W'
+       769          68  .str 'h'
+       770          61  .str 'a'
+       771          74  .str 't'
+       772          20  .str ' '
+       773          69  .str 'i'
+       774          73  .str 's'
+       775          20  .str ' '
+       776          79  .str 'y'
+       777          6f  .str 'o'
+       778          75  .str 'u'
+       779          72  .str 'r'
+       780          20  .str ' '
+       781          6e  .str 'n'
+       782          61  .str 'a'
+       783          6d  .str 'm'
+       784          65  .str 'e'
+       785          3f  .str '?'
+       786           a  .str '
+  '
+       787           0  .str '\0'
+       788          48  .str 'H'
+       789          65  .str 'e'
+       790          6c  .str 'l'
+       791          6c  .str 'l'
+       792          6f  .str 'o'
+       793          2c  .str ','
+       794          20  .str ' '
+       795           0  .str '\0'
+       796          21  .str '!'
+       797           a  .str '
+  '
+       798           0  .str '\0'
+output: |
+  What is your name?
+  Hello, Alice!
+out_log: |-
+  tick=     1 PC=0x0010     DI                0  stk=[]
+  tick=     3 PC=0x0011     PUSH              0  stk=[]
+  tick=     5 PC=0x0012     STOREA          512  stk=[0]
+  tick=     7 PC=0x0013     PUSH              0  stk=[]
+  tick=     9 PC=0x0014     STOREA          513  stk=[0]
+  tick=    11 PC=0x0015     PUSH            768  stk=[]
+  tick=    13 PC=0x0016     CALL             40  stk=[768]
+  tick=    15 PC=0x0028     DUP               0  stk=[768]
+  tick=    17 PC=0x0029     LOAD              0  stk=[768, 768]
+  tick=    19 PC=0x002a     DUP               0  stk=[768, 87]
+  tick=    21 PC=0x002b     JZ               48  stk=[768, 87, 87]
+    [OUT] port=1 char='W' (0x57)
+  tick=    23 PC=0x002c     OUT               1  stk=[768, 87]
+  tick=    25 PC=0x002d     PUSH              1  stk=[768]
+  tick=    27 PC=0x002e     ADD               0  stk=[768, 1]
+  tick=    29 PC=0x002f     JMP              40  stk=[769]
+  tick=    31 PC=0x0028     DUP               0  stk=[769]
+  tick=    33 PC=0x0029     LOAD              0  stk=[769, 769]
+  tick=    35 PC=0x002a     DUP               0  stk=[769, 104]
+  tick=    37 PC=0x002b     JZ               48  stk=[769, 104, 104]
+    [OUT] port=1 char='h' (0x68)
+  tick=    39 PC=0x002c     OUT               1  stk=[769, 104]
+  tick=    41 PC=0x002d     PUSH              1  stk=[769]
+  tick=    43 PC=0x002e     ADD               0  stk=[769, 1]
+  tick=    45 PC=0x002f     JMP              40  stk=[770]
+  tick=    47 PC=0x0028     DUP               0  stk=[770]
+  tick=    49 PC=0x0029     LOAD              0  stk=[770, 770]
+  tick=    51 PC=0x002a     DUP               0  stk=[770, 97]
+  tick=    53 PC=0x002b     JZ               48  stk=[770, 97, 97]
+    [OUT] port=1 char='a' (0x61)
+  tick=    55 PC=0x002c     OUT               1  stk=[770, 97]
+  tick=    57 PC=0x002d     PUSH              1  stk=[770]
+  tick=    59 PC=0x002e     ADD               0  stk=[770, 1]
+  tick=    61 PC=0x002f     JMP              40  stk=[771]
+  tick=    63 PC=0x0028     DUP               0  stk=[771]
+  tick=    65 PC=0x0029     LOAD              0  stk=[771, 771]
+  tick=    67 PC=0x002a     DUP               0  stk=[771, 116]
+  tick=    69 PC=0x002b     JZ               48  stk=[771, 116, 116]
+    [OUT] port=1 char='t' (0x74)
+  tick=    71 PC=0x002c     OUT               1  stk=[771, 116]
+  tick=    73 PC=0x002d     PUSH              1  stk=[771]
+  tick=    75 PC=0x002e     ADD               0  stk=[771, 1]
+  tick=    77 PC=0x002f     JMP              40  stk=[772]
+  tick=    79 PC=0x0028     DUP               0  stk=[772]
+  tick=    81 PC=0x0029     LOAD              0  stk=[772, 772]
+  tick=    83 PC=0x002a     DUP               0  stk=[772, 32]
+  tick=    85 PC=0x002b     JZ               48  stk=[772, 32, 32]
+    [OUT] port=1 char=' ' (0x20)
+  tick=    87 PC=0x002c     OUT               1  stk=[772, 32]
+  tick=    89 PC=0x002d     PUSH              1  stk=[772]
+  tick=    91 PC=0x002e     ADD               0  stk=[772, 1]
+  tick=    93 PC=0x002f     JMP              40  stk=[773]
+  tick=    95 PC=0x0028     DUP               0  stk=[773]
+  tick=    97 PC=0x0029     LOAD              0  stk=[773, 773]
+  tick=    99 PC=0x002a     DUP               0  stk=[773, 105]
+  tick=   101 PC=0x002b     JZ               48  stk=[773, 105, 105]
+    [OUT] port=1 char='i' (0x69)
+  tick=   103 PC=0x002c     OUT               1  stk=[773, 105]
+  tick=   105 PC=0x002d     PUSH              1  stk=[773]
+  tick=   107 PC=0x002e     ADD               0  stk=[773, 1]
+  tick=   109 PC=0x002f     JMP              40  stk=[774]
+  tick=   111 PC=0x0028     DUP               0  stk=[774]
+  tick=   113 PC=0x0029     LOAD              0  stk=[774, 774]
+  tick=   115 PC=0x002a     DUP               0  stk=[774, 115]
+  tick=   117 PC=0x002b     JZ               48  stk=[774, 115, 115]
+    [OUT] port=1 char='s' (0x73)
+  tick=   119 PC=0x002c     OUT               1  stk=[774, 115]
+  tick=   121 PC=0x002d     PUSH              1  stk=[774]
+  tick=   123 PC=0x002e     ADD               0  stk=[774, 1]
+  tick=   125 PC=0x002f     JMP              40  stk=[775]
+  tick=   127 PC=0x0028     DUP               0  stk=[775]
+  tick=   129 PC=0x0029     LOAD              0  stk=[775, 775]
+  tick=   131 PC=0x002a     DUP               0  stk=[775, 32]
+  tick=   133 PC=0x002b     JZ               48  stk=[775, 32, 32]
+    [OUT] port=1 char=' ' (0x20)
+  tick=   135 PC=0x002c     OUT               1  stk=[775, 32]
+  tick=   137 PC=0x002d     PUSH              1  stk=[775]
+  tick=   139 PC=0x002e     ADD               0  stk=[775, 1]
+  tick=   141 PC=0x002f     JMP              40  stk=[776]
+  tick=   143 PC=0x0028     DUP               0  stk=[776]
+  tick=   145 PC=0x0029     LOAD              0  stk=[776, 776]
+  tick=   147 PC=0x002a     DUP               0  stk=[776, 121]
+  tick=   149 PC=0x002b     JZ               48  stk=[776, 121, 121]
+    [OUT] port=1 char='y' (0x79)
+  tick=   151 PC=0x002c     OUT               1  stk=[776, 121]
+  tick=   153 PC=0x002d     PUSH              1  stk=[776]
+  tick=   155 PC=0x002e     ADD               0  stk=[776, 1]
+  tick=   157 PC=0x002f     JMP              40  stk=[777]
+  tick=   159 PC=0x0028     DUP               0  stk=[777]
+  tick=   161 PC=0x0029     LOAD              0  stk=[777, 777]
+  tick=   163 PC=0x002a     DUP               0  stk=[777, 111]
+  tick=   165 PC=0x002b     JZ               48  stk=[777, 111, 111]
+    [OUT] port=1 char='o' (0x6f)
+  tick=   167 PC=0x002c     OUT               1  stk=[777, 111]
+  tick=   169 PC=0x002d     PUSH              1  stk=[777]
+  tick=   171 PC=0x002e     ADD               0  stk=[777, 1]
+  tick=   173 PC=0x002f     JMP              40  stk=[778]
+  tick=   175 PC=0x0028     DUP               0  stk=[778]
+  tick=   177 PC=0x0029     LOAD              0  stk=[778, 778]
+  tick=   179 PC=0x002a     DUP               0  stk=[778, 117]
+  tick=   181 PC=0x002b     JZ               48  stk=[778, 117, 117]
+    [OUT] port=1 char='u' (0x75)
+  tick=   183 PC=0x002c     OUT               1  stk=[778, 117]
+  tick=   185 PC=0x002d     PUSH              1  stk=[778]
+  tick=   187 PC=0x002e     ADD               0  stk=[778, 1]
+  tick=   189 PC=0x002f     JMP              40  stk=[779]
+  tick=   191 PC=0x0028     DUP               0  stk=[779]
+  tick=   193 PC=0x0029     LOAD              0  stk=[779, 779]
+  tick=   195 PC=0x002a     DUP               0  stk=[779, 114]
+  tick=   197 PC=0x002b     JZ               48  stk=[779, 114, 114]
+    [OUT] port=1 char='r' (0x72)
+  tick=   199 PC=0x002c     OUT               1  stk=[779, 114]
+  tick=   201 PC=0x002d     PUSH              1  stk=[779]
+  tick=   203 PC=0x002e     ADD               0  stk=[779, 1]
+  tick=   205 PC=0x002f     JMP              40  stk=[780]
+  tick=   207 PC=0x0028     DUP               0  stk=[780]
+  tick=   209 PC=0x0029     LOAD              0  stk=[780, 780]
+  tick=   211 PC=0x002a     DUP               0  stk=[780, 32]
+  tick=   213 PC=0x002b     JZ               48  stk=[780, 32, 32]
+    [OUT] port=1 char=' ' (0x20)
+  tick=   215 PC=0x002c     OUT               1  stk=[780, 32]
+  tick=   217 PC=0x002d     PUSH              1  stk=[780]
+  tick=   219 PC=0x002e     ADD               0  stk=[780, 1]
+  tick=   221 PC=0x002f     JMP              40  stk=[781]
+  tick=   223 PC=0x0028     DUP               0  stk=[781]
+  tick=   225 PC=0x0029     LOAD              0  stk=[781, 781]
+  tick=   227 PC=0x002a     DUP               0  stk=[781, 110]
+  tick=   229 PC=0x002b     JZ               48  stk=[781, 110, 110]
+    [OUT] port=1 char='n' (0x6e)
+  tick=   231 PC=0x002c     OUT               1  stk=[781, 110]
+  tick=   233 PC=0x002d     PUSH              1  stk=[781]
+  tick=   235 PC=0x002e     ADD               0  stk=[781, 1]
+  tick=   237 PC=0x002f     JMP              40  stk=[782]
+  tick=   239 PC=0x0028     DUP               0  stk=[782]
+  tick=   241 PC=0x0029     LOAD              0  stk=[782, 782]
+  tick=   243 PC=0x002a     DUP               0  stk=[782, 97]
+  tick=   245 PC=0x002b     JZ               48  stk=[782, 97, 97]
+    [OUT] port=1 char='a' (0x61)
+  tick=   247 PC=0x002c     OUT               1  stk=[782, 97]
+  tick=   249 PC=0x002d     PUSH              1  stk=[782]
+  tick=   251 PC=0x002e     ADD               0  stk=[782, 1]
+  tick=   253 PC=0x002f     JMP              40  stk=[783]
+  tick=   255 PC=0x0028     DUP               0  stk=[783]
+  tick=   257 PC=0x0029     LOAD              0  stk=[783, 783]
+  tick=   259 PC=0x002a     DUP               0  stk=[783, 109]
+  tick=   261 PC=0x002b     JZ               48  stk=[783, 109, 109]
+    [OUT] port=1 char='m' (0x6d)
+  tick=   263 PC=0x002c     OUT               1  stk=[783, 109]
+  tick=   265 PC=0x002d     PUSH              1  stk=[783]
+  tick=   267 PC=0x002e     ADD               0  stk=[783, 1]
+  tick=   269 PC=0x002f     JMP              40  stk=[784]
+  tick=   271 PC=0x0028     DUP               0  stk=[784]
+  tick=   273 PC=0x0029     LOAD              0  stk=[784, 784]
+  tick=   275 PC=0x002a     DUP               0  stk=[784, 101]
+  tick=   277 PC=0x002b     JZ               48  stk=[784, 101, 101]
+    [OUT] port=1 char='e' (0x65)
+  tick=   279 PC=0x002c     OUT               1  stk=[784, 101]
+  tick=   281 PC=0x002d     PUSH              1  stk=[784]
+  tick=   283 PC=0x002e     ADD               0  stk=[784, 1]
+  tick=   285 PC=0x002f     JMP              40  stk=[785]
+  tick=   287 PC=0x0028     DUP               0  stk=[785]
+  tick=   289 PC=0x0029     LOAD              0  stk=[785, 785]
+  tick=   291 PC=0x002a     DUP               0  stk=[785, 63]
+  tick=   293 PC=0x002b     JZ               48  stk=[785, 63, 63]
+    [OUT] port=1 char='?' (0x3f)
+  tick=   295 PC=0x002c     OUT               1  stk=[785, 63]
+  tick=   297 PC=0x002d     PUSH              1  stk=[785]
+  tick=   299 PC=0x002e     ADD               0  stk=[785, 1]
+  tick=   301 PC=0x002f     JMP              40  stk=[786]
+  tick=   303 PC=0x0028     DUP               0  stk=[786]
+  tick=   305 PC=0x0029     LOAD              0  stk=[786, 786]
+  tick=   307 PC=0x002a     DUP               0  stk=[786, 10]
+  tick=   309 PC=0x002b     JZ               48  stk=[786, 10, 10]
+    [OUT] port=1 char='
+  ' (0x0a)
+  tick=   311 PC=0x002c     OUT               1  stk=[786, 10]
+  tick=   313 PC=0x002d     PUSH              1  stk=[786]
+  tick=   315 PC=0x002e     ADD               0  stk=[786, 1]
+  tick=   317 PC=0x002f     JMP              40  stk=[787]
+  tick=   319 PC=0x0028     DUP               0  stk=[787]
+  tick=   321 PC=0x0029     LOAD              0  stk=[787, 787]
+  tick=   323 PC=0x002a     DUP               0  stk=[787, 0]
+  tick=   325 PC=0x002b     JZ               48  stk=[787, 0, 0]
+  tick=   327 PC=0x0030     POP               0  stk=[787, 0]
+  tick=   329 PC=0x0031     POP               0  stk=[787]
+  tick=   331 PC=0x0032     RET               0  stk=[]
+  tick=   333 PC=0x0017     EI                0  stk=[]
+    [INT] entering ISR at 0x0033, saved PC=0x0018
+    [IN]  port=0 value=65('A')
+  tick=   337 PC=0x0033 ISR IN                0  stk=[]
+  tick=   339 PC=0x0034 ISR DUP               0  stk=[65]
+  tick=   341 PC=0x0035 ISR PUSH             10  stk=[65, 65]
+  tick=   343 PC=0x0036 ISR EQ                0  stk=[65, 65, 10]
+  tick=   345 PC=0x0037 ISR JNZ              79  stk=[65, 0]
+  tick=   347 PC=0x0038 ISR DUP               0  stk=[65]
+  tick=   349 PC=0x0039 ISR PUSH             13  stk=[65, 65]
+  tick=   351 PC=0x003a ISR EQ                0  stk=[65, 65, 13]
+  tick=   353 PC=0x003b ISR JNZ              79  stk=[65, 0]
+  tick=   355 PC=0x003c ISR DUP               0  stk=[65]
+  tick=   357 PC=0x003d ISR JZ               83  stk=[65, 65]
+  tick=   359 PC=0x003e ISR LOADA           513  stk=[65]
+  tick=   361 PC=0x003f ISR DUP               0  stk=[65, 0]
+  tick=   363 PC=0x0040 ISR PUSH            253  stk=[65, 0, 0]
+  tick=   365 PC=0x0041 ISR GT                0  stk=[65, 0, 0, 253]
+  tick=   367 PC=0x0042 ISR JNZ              76  stk=[65, 0, 0]
+  tick=   369 PC=0x0043 ISR PUSH            514  stk=[65, 0]
+  tick=   371 PC=0x0044 ISR ADD               0  stk=[65, 0, 514]
+  tick=   373 PC=0x0045 ISR SWAP              0  stk=[65, 514]
+  tick=   375 PC=0x0046 ISR STORE             0  stk=[514, 65]
+  tick=   377 PC=0x0047 ISR LOADA           513  stk=[]
+  tick=   379 PC=0x0048 ISR PUSH              1  stk=[0]
+  tick=   381 PC=0x0049 ISR ADD               0  stk=[0, 1]
+  tick=   383 PC=0x004a ISR STOREA          513  stk=[1]
+    [IRET] returning to PC=0x0018, re-enabling interrupts
+  tick=   385 PC=0x004b ISR IRET              0  stk=[]
+    [INT] entering ISR at 0x0033, saved PC=0x0018
+    [IN]  port=0 value=108('l')
+  tick=   389 PC=0x0033 ISR IN                0  stk=[]
+  tick=   391 PC=0x0034 ISR DUP               0  stk=[108]
+  tick=   393 PC=0x0035 ISR PUSH             10  stk=[108, 108]
+  tick=   395 PC=0x0036 ISR EQ                0  stk=[108, 108, 10]
+  tick=   397 PC=0x0037 ISR JNZ              79  stk=[108, 0]
+  tick=   399 PC=0x0038 ISR DUP               0  stk=[108]
+  tick=   401 PC=0x0039 ISR PUSH             13  stk=[108, 108]
+  tick=   403 PC=0x003a ISR EQ                0  stk=[108, 108, 13]
+  tick=   405 PC=0x003b ISR JNZ              79  stk=[108, 0]
+  tick=   407 PC=0x003c ISR DUP               0  stk=[108]
+  tick=   409 PC=0x003d ISR JZ               83  stk=[108, 108]
+  tick=   411 PC=0x003e ISR LOADA           513  stk=[108]
+  tick=   413 PC=0x003f ISR DUP               0  stk=[108, 1]
+  tick=   415 PC=0x0040 ISR PUSH            253  stk=[108, 1, 1]
+  tick=   417 PC=0x0041 ISR GT                0  stk=[108, 1, 1, 253]
+  tick=   419 PC=0x0042 ISR JNZ              76  stk=[108, 1, 0]
+  tick=   421 PC=0x0043 ISR PUSH            514  stk=[108, 1]
+  tick=   423 PC=0x0044 ISR ADD               0  stk=[108, 1, 514]
+  tick=   425 PC=0x0045 ISR SWAP              0  stk=[108, 515]
+  tick=   427 PC=0x0046 ISR STORE             0  stk=[515, 108]
+  tick=   429 PC=0x0047 ISR LOADA           513  stk=[]
+  tick=   431 PC=0x0048 ISR PUSH              1  stk=[1]
+  tick=   433 PC=0x0049 ISR ADD               0  stk=[1, 1]
+  tick=   435 PC=0x004a ISR STOREA          513  stk=[2]
+    [IRET] returning to PC=0x0018, re-enabling interrupts
+  tick=   437 PC=0x004b ISR IRET              0  stk=[]
+    [INT] entering ISR at 0x0033, saved PC=0x0018
+    [IN]  port=0 value=105('i')
+  tick=   441 PC=0x0033 ISR IN                0  stk=[]
+  tick=   443 PC=0x0034 ISR DUP               0  stk=[105]
+  tick=   445 PC=0x0035 ISR PUSH             10  stk=[105, 105]
+  tick=   447 PC=0x0036 ISR EQ                0  stk=[105, 105, 10]
+  tick=   449 PC=0x0037 ISR JNZ              79  stk=[105, 0]
+  tick=   451 PC=0x0038 ISR DUP               0  stk=[105]
+  tick=   453 PC=0x0039 ISR PUSH             13  stk=[105, 105]
+  tick=   455 PC=0x003a ISR EQ                0  stk=[105, 105, 13]
+  tick=   457 PC=0x003b ISR JNZ              79  stk=[105, 0]
+  tick=   459 PC=0x003c ISR DUP               0  stk=[105]
+  tick=   461 PC=0x003d ISR JZ               83  stk=[105, 105]
+  tick=   463 PC=0x003e ISR LOADA           513  stk=[105]
+  tick=   465 PC=0x003f ISR DUP               0  stk=[105, 2]
+  tick=   467 PC=0x0040 ISR PUSH            253  stk=[105, 2, 2]
+  tick=   469 PC=0x0041 ISR GT                0  stk=[105, 2, 2, 253]
+  tick=   471 PC=0x0042 ISR JNZ              76  stk=[105, 2, 0]
+  tick=   473 PC=0x0043 ISR PUSH            514  stk=[105, 2]
+  tick=   475 PC=0x0044 ISR ADD               0  stk=[105, 2, 514]
+  tick=   477 PC=0x0045 ISR SWAP              0  stk=[105, 516]
+  tick=   479 PC=0x0046 ISR STORE             0  stk=[516, 105]
+  tick=   481 PC=0x0047 ISR LOADA           513  stk=[]
+  tick=   483 PC=0x0048 ISR PUSH              1  stk=[2]
+  tick=   485 PC=0x0049 ISR ADD               0  stk=[2, 1]
+  tick=   487 PC=0x004a ISR STOREA          513  stk=[3]
+    [IRET] returning to PC=0x0018, re-enabling interrupts
+  tick=   489 PC=0x004b ISR IRET              0  stk=[]
+    [INT] entering ISR at 0x0033, saved PC=0x0018
+    [IN]  port=0 value=99('c')
+  tick=   493 PC=0x0033 ISR IN                0  stk=[]
+  tick=   495 PC=0x0034 ISR DUP               0  stk=[99]
+  tick=   497 PC=0x0035 ISR PUSH             10  stk=[99, 99]
+  tick=   499 PC=0x0036 ISR EQ                0  stk=[99, 99, 10]
+  tick=   501 PC=0x0037 ISR JNZ              79  stk=[99, 0]
+  tick=   503 PC=0x0038 ISR DUP               0  stk=[99]
+  tick=   505 PC=0x0039 ISR PUSH             13  stk=[99, 99]
+  tick=   507 PC=0x003a ISR EQ                0  stk=[99, 99, 13]
+  tick=   509 PC=0x003b ISR JNZ              79  stk=[99, 0]
+  tick=   511 PC=0x003c ISR DUP               0  stk=[99]
+  tick=   513 PC=0x003d ISR JZ               83  stk=[99, 99]
+  tick=   515 PC=0x003e ISR LOADA           513  stk=[99]
+  tick=   517 PC=0x003f ISR DUP               0  stk=[99, 3]
+  tick=   519 PC=0x0040 ISR PUSH            253  stk=[99, 3, 3]
+  tick=   521 PC=0x0041 ISR GT                0  stk=[99, 3, 3, 253]
+  tick=   523 PC=0x0042 ISR JNZ              76  stk=[99, 3, 0]
+  tick=   525 PC=0x0043 ISR PUSH            514  stk=[99, 3]
+  tick=   527 PC=0x0044 ISR ADD               0  stk=[99, 3, 514]
+  tick=   529 PC=0x0045 ISR SWAP              0  stk=[99, 517]
+  tick=   531 PC=0x0046 ISR STORE             0  stk=[517, 99]
+  tick=   533 PC=0x0047 ISR LOADA           513  stk=[]
+  tick=   535 PC=0x0048 ISR PUSH              1  stk=[3]
+  tick=   537 PC=0x0049 ISR ADD               0  stk=[3, 1]
+  tick=   539 PC=0x004a ISR STOREA          513  stk=[4]
+    [IRET] returning to PC=0x0018, re-enabling interrupts
+  tick=   541 PC=0x004b ISR IRET              0  stk=[]
+    [INT] entering ISR at 0x0033, saved PC=0x0018
+    [IN]  port=0 value=101('e')
+  tick=   545 PC=0x0033 ISR IN                0  stk=[]
+  tick=   547 PC=0x0034 ISR DUP               0  stk=[101]
+  tick=   549 PC=0x0035 ISR PUSH             10  stk=[101, 101]
+  tick=   551 PC=0x0036 ISR EQ                0  stk=[101, 101, 10]
+  tick=   553 PC=0x0037 ISR JNZ              79  stk=[101, 0]
+  tick=   555 PC=0x0038 ISR DUP               0  stk=[101]
+  tick=   557 PC=0x0039 ISR PUSH             13  stk=[101, 101]
+  tick=   559 PC=0x003a ISR EQ                0  stk=[101, 101, 13]
+  tick=   561 PC=0x003b ISR JNZ              79  stk=[101, 0]
+  tick=   563 PC=0x003c ISR DUP               0  stk=[101]
+  tick=   565 PC=0x003d ISR JZ               83  stk=[101, 101]
+  tick=   567 PC=0x003e ISR LOADA           513  stk=[101]
+  tick=   569 PC=0x003f ISR DUP               0  stk=[101, 4]
+  tick=   571 PC=0x0040 ISR PUSH            253  stk=[101, 4, 4]
+  tick=   573 PC=0x0041 ISR GT                0  stk=[101, 4, 4, 253]
+  tick=   575 PC=0x0042 ISR JNZ              76  stk=[101, 4, 0]
+  tick=   577 PC=0x0043 ISR PUSH            514  stk=[101, 4]
+  tick=   579 PC=0x0044 ISR ADD               0  stk=[101, 4, 514]
+  tick=   581 PC=0x0045 ISR SWAP              0  stk=[101, 518]
+  tick=   583 PC=0x0046 ISR STORE             0  stk=[518, 101]
+  tick=   585 PC=0x0047 ISR LOADA           513  stk=[]
+  tick=   587 PC=0x0048 ISR PUSH              1  stk=[4]
+  tick=   589 PC=0x0049 ISR ADD               0  stk=[4, 1]
+  tick=   591 PC=0x004a ISR STOREA          513  stk=[5]
+    [IRET] returning to PC=0x0018, re-enabling interrupts
+  tick=   593 PC=0x004b ISR IRET              0  stk=[]
+    [INT] entering ISR at 0x0033, saved PC=0x0018
+    [IN]  port=0 value=10('?')
+  tick=   597 PC=0x0033 ISR IN                0  stk=[]
+  tick=   599 PC=0x0034 ISR DUP               0  stk=[10]
+  tick=   601 PC=0x0035 ISR PUSH             10  stk=[10, 10]
+  tick=   603 PC=0x0036 ISR EQ                0  stk=[10, 10, 10]
+  tick=   605 PC=0x0037 ISR JNZ              79  stk=[10, 1]
+  tick=   607 PC=0x004f ISR POP               0  stk=[10]
+  tick=   609 PC=0x0050 ISR PUSH              1  stk=[]
+  tick=   611 PC=0x0051 ISR STOREA          512  stk=[1]
+    [IRET] returning to PC=0x0018, re-enabling interrupts
+  tick=   613 PC=0x0052 ISR IRET              0  stk=[]
+  tick=   615 PC=0x0018     LOADA           512  stk=[]
+  tick=   617 PC=0x0019     JZ               24  stk=[1]
+  tick=   619 PC=0x001a     DI                0  stk=[]
+  tick=   621 PC=0x001b     LOADA           513  stk=[]
+  tick=   623 PC=0x001c     PUSH            514  stk=[5]
+  tick=   625 PC=0x001d     ADD               0  stk=[5, 514]
+  tick=   627 PC=0x001e     PUSH              0  stk=[519]
+  tick=   629 PC=0x001f     SWAP              0  stk=[519, 0]
+  tick=   631 PC=0x0020     STORE             0  stk=[0, 519]
+  tick=   633 PC=0x0021     PUSH            788  stk=[]
+  tick=   635 PC=0x0022     CALL             40  stk=[788]
+  tick=   637 PC=0x0028     DUP               0  stk=[788]
+  tick=   639 PC=0x0029     LOAD              0  stk=[788, 788]
+  tick=   641 PC=0x002a     DUP               0  stk=[788, 72]
+  tick=   643 PC=0x002b     JZ               48  stk=[788, 72, 72]
+    [OUT] port=1 char='H' (0x48)
+  tick=   645 PC=0x002c     OUT               1  stk=[788, 72]
+  tick=   647 PC=0x002d     PUSH              1  stk=[788]
+  tick=   649 PC=0x002e     ADD               0  stk=[788, 1]
+  tick=   651 PC=0x002f     JMP              40  stk=[789]
+  tick=   653 PC=0x0028     DUP               0  stk=[789]
+  tick=   655 PC=0x0029     LOAD              0  stk=[789, 789]
+  tick=   657 PC=0x002a     DUP               0  stk=[789, 101]
+  tick=   659 PC=0x002b     JZ               48  stk=[789, 101, 101]
+    [OUT] port=1 char='e' (0x65)
+  tick=   661 PC=0x002c     OUT               1  stk=[789, 101]
+  tick=   663 PC=0x002d     PUSH              1  stk=[789]
+  tick=   665 PC=0x002e     ADD               0  stk=[789, 1]
+  tick=   667 PC=0x002f     JMP              40  stk=[790]
+  tick=   669 PC=0x0028     DUP               0  stk=[790]
+  tick=   671 PC=0x0029     LOAD              0  stk=[790, 790]
+  tick=   673 PC=0x002a     DUP               0  stk=[790, 108]
+  tick=   675 PC=0x002b     JZ               48  stk=[790, 108, 108]
+    [OUT] port=1 char='l' (0x6c)
+  tick=   677 PC=0x002c     OUT               1  stk=[790, 108]
+  tick=   679 PC=0x002d     PUSH              1  stk=[790]
+  tick=   681 PC=0x002e     ADD               0  stk=[790, 1]
+  tick=   683 PC=0x002f     JMP              40  stk=[791]
+  tick=   685 PC=0x0028     DUP               0  stk=[791]
+  tick=   687 PC=0x0029     LOAD              0  stk=[791, 791]
+  tick=   689 PC=0x002a     DUP               0  stk=[791, 108]
+  tick=   691 PC=0x002b     JZ               48  stk=[791, 108, 108]
+    [OUT] port=1 char='l' (0x6c)
+  tick=   693 PC=0x002c     OUT               1  stk=[791, 108]
+  tick=   695 PC=0x002d     PUSH              1  stk=[791]
+  tick=   697 PC=0x002e     ADD               0  stk=[791, 1]
+  tick=   699 PC=0x002f     JMP              40  stk=[792]
+  tick=   701 PC=0x0028     DUP               0  stk=[792]
+  tick=   703 PC=0x0029     LOAD              0  stk=[792, 792]
+  tick=   705 PC=0x002a     DUP               0  stk=[792, 111]
+  tick=   707 PC=0x002b     JZ               48  stk=[792, 111, 111]
+    [OUT] port=1 char='o' (0x6f)
+  tick=   709 PC=0x002c     OUT               1  stk=[792, 111]
+  tick=   711 PC=0x002d     PUSH              1  stk=[792]
+  tick=   713 PC=0x002e     ADD               0  stk=[792, 1]
+  tick=   715 PC=0x002f     JMP              40  stk=[793]
+  tick=   717 PC=0x0028     DUP               0  stk=[793]
+  tick=   719 PC=0x0029     LOAD              0  stk=[793, 793]
+  tick=   721 PC=0x002a     DUP               0  stk=[793, 44]
+  tick=   723 PC=0x002b     JZ               48  stk=[793, 44, 44]
+    [OUT] port=1 char=',' (0x2c)
+  tick=   725 PC=0x002c     OUT               1  stk=[793, 44]
+  tick=   727 PC=0x002d     PUSH              1  stk=[793]
+  tick=   729 PC=0x002e     ADD               0  stk=[793, 1]
+  tick=   731 PC=0x002f     JMP              40  stk=[794]
+  tick=   733 PC=0x0028     DUP               0  stk=[794]
+  tick=   735 PC=0x0029     LOAD              0  stk=[794, 794]
+  tick=   737 PC=0x002a     DUP               0  stk=[794, 32]
+  tick=   739 PC=0x002b     JZ               48  stk=[794, 32, 32]
+    [OUT] port=1 char=' ' (0x20)
+  tick=   741 PC=0x002c     OUT               1  stk=[794, 32]
+  tick=   743 PC=0x002d     PUSH              1  stk=[794]
+  tick=   745 PC=0x002e     ADD               0  stk=[794, 1]
+  tick=   747 PC=0x002f     JMP              40  stk=[795]
+  tick=   749 PC=0x0028     DUP               0  stk=[795]
+  tick=   751 PC=0x0029     LOAD              0  stk=[795, 795]
+  tick=   753 PC=0x002a     DUP               0  stk=[795, 0]
+  tick=   755 PC=0x002b     JZ               48  stk=[795, 0, 0]
+  tick=   757 PC=0x0030     POP               0  stk=[795, 0]
+  tick=   759 PC=0x0031     POP               0  stk=[795]
+  tick=   761 PC=0x0032     RET               0  stk=[]
+  tick=   763 PC=0x0023     PUSH            514  stk=[]
+  tick=   765 PC=0x0024     CALL             40  stk=[514]
+  tick=   767 PC=0x0028     DUP               0  stk=[514]
+  tick=   769 PC=0x0029     LOAD              0  stk=[514, 514]
+  tick=   771 PC=0x002a     DUP               0  stk=[514, 65]
+  tick=   773 PC=0x002b     JZ               48  stk=[514, 65, 65]
+    [OUT] port=1 char='A' (0x41)
+  tick=   775 PC=0x002c     OUT               1  stk=[514, 65]
+  tick=   777 PC=0x002d     PUSH              1  stk=[514]
+  tick=   779 PC=0x002e     ADD               0  stk=[514, 1]
+  tick=   781 PC=0x002f     JMP              40  stk=[515]
+  tick=   783 PC=0x0028     DUP               0  stk=[515]
+  tick=   785 PC=0x0029     LOAD              0  stk=[515, 515]
+  tick=   787 PC=0x002a     DUP               0  stk=[515, 108]
+  tick=   789 PC=0x002b     JZ               48  stk=[515, 108, 108]
+    [OUT] port=1 char='l' (0x6c)
+  tick=   791 PC=0x002c     OUT               1  stk=[515, 108]
+  tick=   793 PC=0x002d     PUSH              1  stk=[515]
+  tick=   795 PC=0x002e     ADD               0  stk=[515, 1]
+  tick=   797 PC=0x002f     JMP              40  stk=[516]
+  tick=   799 PC=0x0028     DUP               0  stk=[516]
+  tick=   801 PC=0x0029     LOAD              0  stk=[516, 516]
+  tick=   803 PC=0x002a     DUP               0  stk=[516, 105]
+  tick=   805 PC=0x002b     JZ               48  stk=[516, 105, 105]
+    [OUT] port=1 char='i' (0x69)
+  tick=   807 PC=0x002c     OUT               1  stk=[516, 105]
+  tick=   809 PC=0x002d     PUSH              1  stk=[516]
+  tick=   811 PC=0x002e     ADD               0  stk=[516, 1]
+  tick=   813 PC=0x002f     JMP              40  stk=[517]
+  tick=   815 PC=0x0028     DUP               0  stk=[517]
+  tick=   817 PC=0x0029     LOAD              0  stk=[517, 517]
+  tick=   819 PC=0x002a     DUP               0  stk=[517, 99]
+  tick=   821 PC=0x002b     JZ               48  stk=[517, 99, 99]
+    [OUT] port=1 char='c' (0x63)
+  tick=   823 PC=0x002c     OUT               1  stk=[517, 99]
+  tick=   825 PC=0x002d     PUSH              1  stk=[517]
+  tick=   827 PC=0x002e     ADD               0  stk=[517, 1]
+  tick=   829 PC=0x002f     JMP              40  stk=[518]
+  tick=   831 PC=0x0028     DUP               0  stk=[518]
+  tick=   833 PC=0x0029     LOAD              0  stk=[518, 518]
+  tick=   835 PC=0x002a     DUP               0  stk=[518, 101]
+  tick=   837 PC=0x002b     JZ               48  stk=[518, 101, 101]
+    [OUT] port=1 char='e' (0x65)
+  tick=   839 PC=0x002c     OUT               1  stk=[518, 101]
+  tick=   841 PC=0x002d     PUSH              1  stk=[518]
+  tick=   843 PC=0x002e     ADD               0  stk=[518, 1]
+  tick=   845 PC=0x002f     JMP              40  stk=[519]
+  tick=   847 PC=0x0028     DUP               0  stk=[519]
+  tick=   849 PC=0x0029     LOAD              0  stk=[519, 519]
+  tick=   851 PC=0x002a     DUP               0  stk=[519, 0]
+  tick=   853 PC=0x002b     JZ               48  stk=[519, 0, 0]
+  tick=   855 PC=0x0030     POP               0  stk=[519, 0]
+  tick=   857 PC=0x0031     POP               0  stk=[519]
+  tick=   859 PC=0x0032     RET               0  stk=[]
+  tick=   861 PC=0x0025     PUSH            796  stk=[]
+  tick=   863 PC=0x0026     CALL             40  stk=[796]
+  tick=   865 PC=0x0028     DUP               0  stk=[796]
+  tick=   867 PC=0x0029     LOAD              0  stk=[796, 796]
+  tick=   869 PC=0x002a     DUP               0  stk=[796, 33]
+  tick=   871 PC=0x002b     JZ               48  stk=[796, 33, 33]
+    [OUT] port=1 char='!' (0x21)
+  tick=   873 PC=0x002c     OUT               1  stk=[796, 33]
+  tick=   875 PC=0x002d     PUSH              1  stk=[796]
+  tick=   877 PC=0x002e     ADD               0  stk=[796, 1]
+  tick=   879 PC=0x002f     JMP              40  stk=[797]
+  tick=   881 PC=0x0028     DUP               0  stk=[797]
+  tick=   883 PC=0x0029     LOAD              0  stk=[797, 797]
+  tick=   885 PC=0x002a     DUP               0  stk=[797, 10]
+  tick=   887 PC=0x002b     JZ               48  stk=[797, 10, 10]
+    [OUT] port=1 char='
+  ' (0x0a)
+  tick=   889 PC=0x002c     OUT               1  stk=[797, 10]
+  tick=   891 PC=0x002d     PUSH              1  stk=[797]
+  tick=   893 PC=0x002e     ADD               0  stk=[797, 1]
+  tick=   895 PC=0x002f     JMP              40  stk=[798]
+  tick=   897 PC=0x0028     DUP               0  stk=[798]
+  tick=   899 PC=0x0029     LOAD              0  stk=[798, 798]
+  tick=   901 PC=0x002a     DUP               0  stk=[798, 0]
+  tick=   903 PC=0x002b     JZ               48  stk=[798, 0, 0]
+  tick=   905 PC=0x0030     POP               0  stk=[798, 0]
+  tick=   907 PC=0x0031     POP               0  stk=[798]
+  tick=   909 PC=0x0032     RET               0  stk=[]
+  tick=   911 PC=0x0027     HALT              0  stk=[]
+in_stdin: |
+  100 65
+  110 108
+  120 105
+  130 99
+  140 101
+  150 10

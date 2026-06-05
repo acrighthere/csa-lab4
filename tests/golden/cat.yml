@@ -1,0 +1,129 @@
+in_source: |
+  %define FLAG_ADDR  0x200
+  %define CHAR_ADDR  0x201
+  %define EOF_CHAR   0
+
+  .org 0x000
+      .word isr_input
+
+  .org 0x010
+  _start:
+      ; Initialize flag
+      PUSH 0
+      STOREA FLAG_ADDR
+
+      EI
+
+
+  .wait_loop:
+      LOADA FLAG_ADDR
+      JNZ .exit
+      JMP .wait_loop
+
+  .exit:
+      HALT
+
+  isr_input:
+      IN 0
+      DUP
+      JZ .eof
+
+
+      OUT 1
+      IRET
+
+  .eof:
+      POP
+      PUSH 1
+      STOREA FLAG_ADDR
+      IRET
+machine_code: |2
+   Address         HEX  Mnemonic
+  ------------------------------------------------------------
+         0          17  .word isr_input
+        16     1000000  PUSH 0(=0x0000)
+        17    13000200  STOREA 0x200(=0x0200)
+        18    60000000  EI
+        19    12000200  LOADA 0x200(=0x0200)
+        20    42000016  JNZ .exit(=0x0016)
+        21    40000013  JMP .wait_loop(=0x0013)
+        22    47000000  HALT
+        23    50000000  IN 0(=0x0000)
+        24     3000000  DUP
+        25    4100001c  JZ .eof(=0x001c)
+        26    51000001  OUT 1(=0x0001)
+        27    62000000  IRET
+        28     2000000  POP
+        29     1000001  PUSH 1(=0x0001)
+        30    13000200  STOREA 0x200(=0x0200)
+        31    62000000  IRET
+output: hello
+out_log: |-
+  tick=     1 PC=0x0010     PUSH              0  stk=[]
+  tick=     3 PC=0x0011     STOREA          512  stk=[0]
+  tick=     5 PC=0x0012     EI                0  stk=[]
+    [INT] entering ISR at 0x0017, saved PC=0x0013
+    [IN]  port=0 value=104('h')
+  tick=     9 PC=0x0017 ISR IN                0  stk=[]
+  tick=    11 PC=0x0018 ISR DUP               0  stk=[104]
+  tick=    13 PC=0x0019 ISR JZ               28  stk=[104, 104]
+    [OUT] port=1 char='h' (0x68)
+  tick=    15 PC=0x001a ISR OUT               1  stk=[104]
+    [IRET] returning to PC=0x0013, re-enabling interrupts
+  tick=    17 PC=0x001b ISR IRET              0  stk=[]
+    [INT] entering ISR at 0x0017, saved PC=0x0013
+    [IN]  port=0 value=101('e')
+  tick=    21 PC=0x0017 ISR IN                0  stk=[]
+  tick=    23 PC=0x0018 ISR DUP               0  stk=[101]
+  tick=    25 PC=0x0019 ISR JZ               28  stk=[101, 101]
+    [OUT] port=1 char='e' (0x65)
+  tick=    27 PC=0x001a ISR OUT               1  stk=[101]
+    [IRET] returning to PC=0x0013, re-enabling interrupts
+  tick=    29 PC=0x001b ISR IRET              0  stk=[]
+    [INT] entering ISR at 0x0017, saved PC=0x0013
+    [IN]  port=0 value=108('l')
+  tick=    33 PC=0x0017 ISR IN                0  stk=[]
+  tick=    35 PC=0x0018 ISR DUP               0  stk=[108]
+  tick=    37 PC=0x0019 ISR JZ               28  stk=[108, 108]
+    [OUT] port=1 char='l' (0x6c)
+  tick=    39 PC=0x001a ISR OUT               1  stk=[108]
+    [IRET] returning to PC=0x0013, re-enabling interrupts
+  tick=    41 PC=0x001b ISR IRET              0  stk=[]
+    [INT] entering ISR at 0x0017, saved PC=0x0013
+    [IN]  port=0 value=108('l')
+  tick=    45 PC=0x0017 ISR IN                0  stk=[]
+  tick=    47 PC=0x0018 ISR DUP               0  stk=[108]
+  tick=    49 PC=0x0019 ISR JZ               28  stk=[108, 108]
+    [OUT] port=1 char='l' (0x6c)
+  tick=    51 PC=0x001a ISR OUT               1  stk=[108]
+    [IRET] returning to PC=0x0013, re-enabling interrupts
+  tick=    53 PC=0x001b ISR IRET              0  stk=[]
+    [INT] entering ISR at 0x0017, saved PC=0x0013
+    [IN]  port=0 value=111('o')
+  tick=    57 PC=0x0017 ISR IN                0  stk=[]
+  tick=    59 PC=0x0018 ISR DUP               0  stk=[111]
+  tick=    61 PC=0x0019 ISR JZ               28  stk=[111, 111]
+    [OUT] port=1 char='o' (0x6f)
+  tick=    63 PC=0x001a ISR OUT               1  stk=[111]
+    [IRET] returning to PC=0x0013, re-enabling interrupts
+  tick=    65 PC=0x001b ISR IRET              0  stk=[]
+    [INT] entering ISR at 0x0017, saved PC=0x0013
+    [IN]  port=0 value=0('?')
+  tick=    69 PC=0x0017 ISR IN                0  stk=[]
+  tick=    71 PC=0x0018 ISR DUP               0  stk=[0]
+  tick=    73 PC=0x0019 ISR JZ               28  stk=[0, 0]
+  tick=    75 PC=0x001c ISR POP               0  stk=[0]
+  tick=    77 PC=0x001d ISR PUSH              1  stk=[]
+  tick=    79 PC=0x001e ISR STOREA          512  stk=[1]
+    [IRET] returning to PC=0x0013, re-enabling interrupts
+  tick=    81 PC=0x001f ISR IRET              0  stk=[]
+  tick=    83 PC=0x0013     LOADA           512  stk=[]
+  tick=    85 PC=0x0014     JNZ              22  stk=[1]
+  tick=    87 PC=0x0016     HALT              0  stk=[]
+in_stdin: |
+  5 104
+  10 101
+  15 108
+  20 108
+  25 111
+  35 0

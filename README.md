@@ -1,0 +1,388 @@
+# Лабораторная работа №4. Эксперимент
+
+**Студент**: (Родионов Максим Артемович, группа P3231)  
+**Вариант**: `asm | stack | neum | hw | tick | binary | trap | port | cstr | prob2`
+
+---
+
+## Язык программирования
+
+### Синтаксис
+
+Язык — **ассемблер** для стекового процессора. Форма Бэкуса–Наура:
+
+```bnf
+program     ::= {line}
+line        ::= [label] [statement] [comment] EOL
+label       ::= NAME ":"
+statement   ::= directive | instruction
+directive   ::= ".org"  NUMBER
+              | ".word" NUMBER {"," NUMBER}
+              | ".str"  STRING_LITERAL
+              | ".equ"  NAME  VALUE
+              | ".section" NAME
+              | "%define" NAME VALUE
+              | "%macro" NAME | "%endmacro"
+              | "%ifdef" NAME | "%ifndef" NAME | "%else" | "%endif"
+instruction ::= MNEMONIC [operand]
+operand     ::= NUMBER | NAME
+comment     ::= ";" {any_char}
+NUMBER      ::= decimal | "0x" hex
+STRING_LITERAL ::= '"' {char | escape} '"'
+escape      ::= "\n" | "\t" | "\r" | "\0" | "\\" | "\""
+```
+
+**Примеры**:
+```asm
+; Константа
+%define LIMIT 4000000
+
+; Метка и инструкция
+_start:
+    PUSH LIMIT          ; PUSH 4000000
+    CALL my_proc
+
+; Секция данных
+.org 0x100
+msg:
+    .str "Hello!\n"     ; cstr — null-terminated
+```
+
+### Семантика
+
+- **Стратегия вычислений**: строгая (eager), линейное исполнение инструкций; передача управления — только через JMP/CALL/RET/прерывания.
+- **Области видимости**: все метки глобальны в рамках единицы трансляции. Локальные метки (с `.` в начале) видны только внутри функции (разделены метками без `.`). Препроцессор раскрывает `%define` текстуально.
+- **Типизация**: нет типов, только 32-битные целые без знака (знак интерпретируется операцией). Строки — cstr: последовательность 32-битных слов, каждое хранит один символ (ASCII), завершается словом `0`.
+- **Литералы**: числа (decimal / 0x hex) и строки в `.str`. Числа кодируются как 24-битное immediate в инструкции (знаковое расширение).
+- **Макросы**: `%define NAME VALUE` — текстовая подстановка. `%macro`/`%endmacro` — группа инструкций без параметров.
+
+---
+
+## Организация памяти
+
+### Модель памяти (фон Нейман)
+
+Единая память: 65536 слов по 32 бита. Инструкции и данные — в одном адресном пространстве.
+
+```
+       Registers
++------------------------------+
+| PC   — program counter       |
+| IR   — instruction register  |
+| (data stack, return stack)   |
++------------------------------+
+
+       Memory (unified, 65536 x 32-bit words)
++-------------------------------+
+| 0x000  interrupt vector       |  addr of ISR handler
+| 0x001  ... (reserved)         |
+|                               |
+| 0x010  program start          |  _start
+| ...    instructions           |
+| ...    subroutines            |
+| ...    ISR code               |
+|                               |
+| 0x100+ data constants         |  .str, .word
+| ...    variables (scratch)    |  STOREA addr
++-------------------------------+
+```
+
+- **Инструкции**: размещаются начиная с `0x010` (`.org 0x010`).
+- **Обработчик прерываний**: адрес хранится в `mem[0x000]`; сам ISR размещается по произвольному адресу в коде.
+- **Статические данные**: строки `.str` и константы `.word` — в секции данных (например, `.org 0x100`).
+- **Динамические данные / переменные**: хранятся в фиксированных ячейках памяти (`LOADA`/`STOREA addr`). Стека данных нет в памяти — это аппаратный стек.
+- **Литералы**: числа до 24 бит кодируются как immediate (`PUSH 42`). Строки всегда в памяти.
+- **Стек данных**: аппаратный, не занимает адресное пространство. Глубина 256 слов.
+- **Стек возвратов**: аппаратный, отдельный. Глубина 256 слов.
+
+---
+
+## Система команд
+
+### Особенности процессора
+
+- **32-битные слова**, знаковая арифметика, беззнаковые адреса.
+- **Стековая архитектура**: все операции работают через TOS (top of stack) и NOS (next on stack).
+- **Port-mapped I/O**: `IN port` / `OUT port` — специальные инструкции.
+- **Прерывания trap**: внешние прерывания доставляются по расписанию; при активации — сохраняем PC в return stack, переходим по вектору `mem[0x000]`.
+
+### Кодирование инструкции
+
+Каждая инструкция — 32-битное слово:
+
+```
+ 31      24  23                0
++----------+--------------------+
+|  opcode  |    operand (24b)   |
+|  (8 bit) |  sign-extended     |
++----------+--------------------+
+```
+
+Пример: `PUSH 0x100` = `0x01000100`
+
+### Набор инструкций
+
+| Мнемоника     | Opcode | Такты | Описание |
+|---------------|--------|-------|----------|
+| `NOP`         | 0x00   | 1     | Нет операции |
+| `PUSH imm`    | 0x01   | 1     | Положить 24-bit sign-ext imm |
+| `POP`         | 0x02   | 1     | Снять TOS |
+| `DUP`         | 0x03   | 1     | Дублировать TOS |
+| `SWAP`        | 0x04   | 1     | Поменять TOS и NOS |
+| `OVER`        | 0x05   | 1     | Скопировать NOS на вершину |
+| `LOAD`        | 0x10   | 1     | TOS = mem[TOS] |
+| `STORE`       | 0x11   | 1     | mem[NOS] = TOS; pop 2 |
+| `LOADA addr`  | 0x12   | 1     | push mem[addr] |
+| `STOREA addr` | 0x13   | 1     | mem[addr] = pop() |
+| `ADD`         | 0x20   | 1     | TOS = NOS + TOS; pop 1 |
+| `SUB`         | 0x21   | 1     | TOS = NOS - TOS; pop 1 |
+| `MUL`         | 0x22   | 1     | TOS = NOS * TOS; pop 1 |
+| `DIV`         | 0x23   | 1     | TOS = NOS / TOS (trunc); pop 1 |
+| `MOD`         | 0x24   | 1     | TOS = NOS % TOS; pop 1 |
+| `AND/OR/XOR`  | 0x25–7 | 1     | Побитовые операции |
+| `NOT`         | 0x28   | 1     | TOS = ~TOS |
+| `NEG`         | 0x29   | 1     | TOS = -TOS |
+| `SHL/SHR`     | 0x2A–B | 1     | Сдвиги |
+| `EQ/NEQ/LT/LE/GT/GE` | 0x30–35 | 1 | Сравнение; push 0/1 |
+| `JMP addr`    | 0x40   | 1     | Безусловный переход |
+| `JZ addr`     | 0x41   | 1     | Переход если TOS==0; pop |
+| `JNZ addr`    | 0x42   | 1     | Переход если TOS!=0; pop |
+| `JGZ/JLZ`    | 0x43–44| 1     | Условные переходы |
+| `CALL addr`   | 0x45   | 1     | Push PC → return stack; JMP |
+| `RET`         | 0x46   | 1     | PC ← pop return stack |
+| `HALT`        | 0x47   | 1     | Остановка |
+| `IN port`     | 0x50   | 1     | push input_port[port] |
+| `OUT port`    | 0x51   | 1     | output_port[port] = pop() |
+| `EI`          | 0x60   | 1     | Разрешить прерывания |
+| `DI`          | 0x61   | 1     | Запретить прерывания |
+| `IRET`        | 0x62   | 1     | PC ← pop return stack; EI; exit ISR |
+
+**Классификация**: стековая архитектура. По набору команд — ближе к RISC (фиксированная длина инструкции 32 бита, простые операции), но с memory-операциями — ближе к CISC.
+
+---
+
+## Транслятор
+
+### Интерфейс командной строки
+
+```
+python src/translator.py <source.asm> <output.bin> [--debug <debug.txt>]
+```
+
+- `source.asm` — исходный код на ассемблере.
+- `output.bin` — бинарный файл с машинным кодом.
+- `--debug debug.txt` — опциональный текстовый листинг вида `<addr> - <HEX> - <mnemonic>`.
+
+**Пример**:
+```
+python src/translator.py programs/hello.asm /tmp/hello.bin --debug /tmp/hello_debug.txt
+```
+
+### Принципы работы
+
+Двухпроходной ассемблер:
+
+1. **Препроцессор** (перед passes):
+   - Удаление комментариев (`;`).
+   - Обработка `%define` / `.equ` — текстовая замена.
+   - Сбор и развёртывание `%macro`/`%endmacro`.
+   - Условная компиляция: `%ifdef`/`%ifndef`/`%else`/`%endif`.
+
+2. **Проход 1** — сбор меток: обходит строки, отслеживает `.org`, `.word`, `.str`, инструкции и записывает адреса меток в таблицу.
+
+3. **Проход 2** — генерация кода: разрешает операнды (метки → числа) и вызывает `encode_instruction(opcode, operand)` → 32-bit word. Данные `.word`/`.str` записываются как raw words.
+
+4. **Вывод**: бинарный формат — заголовок (количество пар), затем пары `(addr: uint32, word: uint32)` big-endian.
+
+---
+
+## Модель процессора
+
+### DataPath
+
+```
+          +------------------------------------------------+
+          |               Data Stack (256 x 32b)          |
+          |  push / pop / peek                             |
+          +--------+-------------------+-------------------+
+                   |  TOS              |  NOS
+                   v                  v
+          +--------+------------------+--------+
+          |                  ALU                |
+          |  ADD/SUB/MUL/DIV/MOD/AND/OR/XOR/   |
+          |  NOT/NEG/SHL/SHR/EQ/NEQ/LT/LE/GT/GE|
+          +------------------+------------------+
+                             |  result → push
+                             v
+           +------------------+------------------+
+          |          Memory (65536 x 32b)        |
+          |  Von Neumann (unified instr+data)    |
+          +--------------------------------------+
+
+          +------------------------------------------+
+          |         I/O Ports (port-mapped)           |
+          |  IN port  →  push value from port reg    |
+          |  OUT port ←  pop value to port reg       |
+          +------------------------------------------+
+```
+
+### ControlUnit (Hardwired)
+
+```
+          +-----------------------------------------------+
+          |                 Control Unit                  |
+          |                                               |
+          |  PC ──► [Fetch] ──► IR ──► [Decode] ──►      |
+          |           │                    │              |
+           |           │ fetch ticks        │ dispatch     |
+          |           ▼                    ▼              |
+          |  tick counter          execute + update stack |
+          |  (global, incremented  / memory / PC / flags  |
+          |   by each operation)                          |
+          |                                               |
+          |  [Interrupt Check] ─ at each step()           |
+          |    check schedule → enqueue → enter ISR       |
+          +-----------------------------------------------+
+          Signals (conceptual, not wired in diagram):
+          push, pop, alu_op, mem_read, mem_write,
+          port_in, port_out, ei, di, iret, halt
+```
+
+### Особенности реализации
+
+- Модель тиктово-точная: каждая операция добавляет тики. Каждое обращение к памяти (`LOAD`/`STORE`/`LOADA`/`STOREA`, а также fetch) добавляет 1 тик.
+- `step()` выполняет одну инструкцию: проверка прерываний → fetch → execute.
+- Прерывания обрабатываются через очередь `_interrupt_queue`: символы из расписания ставятся в очередь в порядке поступления; одно прерывание за раз (пока не выполнен IRET).
+- ISR в журнале помечается флагом ` ISR`.
+
+---
+
+## Тестирование
+
+### Инструментальная цепочка
+
+```bash
+# Трансляция
+python src/translator.py programs/hello.asm /tmp/hello.bin --debug /tmp/hello_debug.txt
+
+# Симуляция (входной файл — расписание прерываний)
+python src/machine.py /tmp/hello.bin input.txt
+
+# Все тесты
+pytest tests/test_golden.py -v
+
+# Перегенерировать эталоны (после изменения программ)
+pytest tests/test_golden.py --update-goldens
+```
+
+### Golden Tests 
+
+Тесты хранятся в `tests/golden/*.yml`. Каждый файл содержит исходный код алгоритма, машинный код (дамп с адресами и мнемониками), ожидаемый вывод и полный журнал тактов.
+
+| Алгоритм           | Входные данные | Ожидаемый вывод |
+|--------------------|----------------|-----------------|
+| `hello`            | — | `Hello, World!\n` |
+| `cat`              | `hello\0` (расписание прерываний) | `hello` |
+| `hello_user_name`  | `Alice\n` (расписание прерываний) | `What is your name?\nHello, Alice!\n` |
+| `sort`             | `5 3 1 4 2\0` (расписание прерываний) | `1\n2\n3\n4\n5\n` |
+| `prob2`            | — | `4613732\n` |
+| `double_precision` | — | `1099511627776\n` |
+
+### Примеры работы
+
+#### hello
+
+```
+$ python src/translator.py programs/hello.asm /tmp/hello.bin --debug /tmp/hello_debug.txt
+Assembled 32 words -> /tmp/hello.bin
+
+$ python src/machine.py /tmp/hello.bin /dev/null
+Hello, World!
+```
+
+Фрагмент журнала:
+```
+tick=     1 PC=0x0010     DI                0  stk=[]
+tick=     3 PC=0x0011     PUSH            256  stk=[]
+tick=     5 PC=0x0012     CALL             20  stk=[256]
+tick=     7 PC=0x0014     DUP               0  stk=[256]
+tick=     9 PC=0x0015     LOAD              0  stk=[256, 256]
+tick=    11 PC=0x0016     DUP               0  stk=[256, 72]
+tick=    13 PC=0x0017     JZ               28  stk=[256, 72, 72]
+  [OUT] port=1 char='H' (0x48)
+tick=    15 PC=0x0018     OUT               1  stk=[256, 72]
+```
+
+#### cat (trap I/O)
+
+```
+$ python src/machine.py cat.bin input.txt
+hello
+```
+
+Фрагмент журнала:
+```
+tick=     1 PC=0x0010     PUSH              0  stk=[]
+tick=     3 PC=0x0011     STOREA          512  stk=[0]
+tick=     5 PC=0x0012     EI                0  stk=[]
+  [INT] entering ISR at 0x0017, saved PC=0x0013
+  [IN]  port=0 value=104('h')
+tick=     9 PC=0x0017 ISR IN                0  stk=[]
+tick=    11 PC=0x0018 ISR DUP               0  stk=[104]
+tick=    13 PC=0x0019 ISR JZ               28  stk=[104, 104]
+  [OUT] port=1 char='h' (0x68)
+tick=    15 PC=0x001a ISR OUT               1  stk=[104]
+  [IRET] returning to PC=0x0013, re-enabling interrupts
+tick=    17 PC=0x001b ISR IRET              0  stk=[]
+```
+
+#### prob2 (Euler #2)
+
+```
+$ python src/machine.py prob2.bin /dev/null
+4613732
+
+Total ticks: 1700
+```
+
+#### double_precision (64-бит арифметика)
+
+```
+$ python src/machine.py double_precision.bin /dev/null
+1099511627776
+
+# 2^40 = 256 * 2^32 + 0  => hi=256 (не 0 — число не помещается в 32 бита!)
+```
+
+---
+
+## Структура проекта
+
+```
+Lab4AK/
+├── src/
+│   ├── isa.py          # ISA: opcodes, encoding, constants
+│   ├── translator.py   # 2-pass assembler, binary I/O
+│   └── machine.py      # Tick-accurate processor simulator + traps
+├── programs/
+│   ├── hello.asm
+│   ├── cat.asm
+│   ├── hello_user_name.asm
+│   ├── sort.asm
+│   ├── prob2.asm
+│   └── double_precision.asm
+├── tests/
+│   ├── conftest.py     # --update-goldens flag
+│   ├── test_golden.py  # 6 golden tests (pytest)
+│   └── golden/
+│       ├── hello.yml
+│       ├── cat.yml
+│       ├── hello_user_name.yml
+│       ├── sort.yml
+│       ├── prob2.yml
+│       └── double_precision.yml
+├── .github/workflows/
+│   └── ci.yml          # CI: ruff + mypy + pytest
+├── pyproject.toml      # ruff/mypy/pytest config + pyyaml dep
+└── README.md
+```
