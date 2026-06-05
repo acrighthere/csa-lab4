@@ -17,6 +17,7 @@ import pytest
 import yaml
 from yaml.representer import SafeRepresenter
 
+
 def _str_representer(dumper: yaml.Dumper, data: str) -> yaml.ScalarNode:
     if "\n" in data:
         return dumper.represent_scalar("tag:yaml.org,2002:str", data, style="|")
@@ -61,9 +62,7 @@ CASES: list[tuple[str, str, int]] = [
 ]
 
 
-
 # Helpers
-
 
 
 def _make_debug_str(memory: dict[int, int], source_map: dict[int, str]) -> str:
@@ -98,9 +97,7 @@ def _run(program_stem: str, schedule_text: str, max_ticks: int) -> tuple[str, st
     return machine_code, output, log
 
 
-
 # Tests
-
 
 
 @pytest.mark.parametrize("stem,schedule,max_ticks", CASES, ids=[c[0] for c in CASES])
@@ -126,9 +123,7 @@ def test_golden(stem: str, schedule: str, max_ticks: int, request: pytest.Fixtur
         return
 
     if not golden_path.exists():
-        pytest.fail(
-            f"Golden file {golden_path} not found. Run with --update-goldens to create it."
-        )
+        pytest.fail(f"Golden file {golden_path} not found. Run with --update-goldens to create it.")
 
     data = yaml.safe_load(golden_path.read_text(encoding="utf-8"))
 

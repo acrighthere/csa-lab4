@@ -86,8 +86,7 @@ class Processor:
         # --- Log ---
         self.log_lines: list[str] = []
 
-
-# Stack helpers
+    # Stack helpers
 
     def _push(self, value: int) -> None:
         if len(self.dstack) >= STACK_SIZE:
@@ -113,7 +112,6 @@ class Processor:
         if not self.rstack:
             raise RuntimeError("Return stack underflow")
         return self.rstack.pop()
-
 
     # Sign helper
 
@@ -141,7 +139,6 @@ class Processor:
             raise RuntimeError(f"Memory write out of bounds: {addr:#010x}")
         self.memory[addr] = value & 0xFFFF_FFFF
         return 1
-
 
     # Interrupt delivery
 
@@ -175,9 +172,7 @@ class Processor:
         self.pc = handler_addr
         self.tick += 2  # interrupt acknowledge overhead
 
-
     # Fetch + decode
-
 
     def _fetch(self) -> tuple[Opcode, int]:
         """Fetch instruction at PC, advance PC. Returns (opcode, operand)."""
@@ -187,7 +182,6 @@ class Processor:
         opcode, operand = decode_instruction(val)
         self.pc += 1
         return opcode, operand
-
 
     # Execute one instruction
 
@@ -460,8 +454,8 @@ class Processor:
 
         else:
             raise RuntimeError(f"Unknown opcode: {opcode:#04x}")
-    # Logging
 
+    # Logging
 
     def _state_str(self, pc: int, opcode: Opcode, operand: int) -> str:
         stack_repr = str(self.dstack[-8:]) if self.dstack else "[]"
@@ -475,7 +469,6 @@ class Processor:
         self.log_lines.append(msg)
 
     # Run
-
 
     def run(self, max_ticks: int = 1_000_000) -> None:
         """Run until HALT or tick limit."""
@@ -492,7 +485,6 @@ class Processor:
 
 
 # Input schedule parser
-
 
 
 def parse_input_schedule(text: str) -> list[tuple[int, int]]:
@@ -521,7 +513,6 @@ def parse_input_schedule(text: str) -> list[tuple[int, int]]:
                 raise ValueError(f"Cannot parse token '{token}' as char or int") from None
         schedule.append((tick, char_val))
     return schedule
-
 
 
 # CLI
@@ -567,9 +558,7 @@ def main() -> None:
         print(log_text, file=sys.stderr)
 
     print(
-        f"\n--- Stats ---\n"
-        f"  Total ticks: {cpu.tick}\n"
-        f"  Output: '{output_text}'",
+        f"\n--- Stats ---\n  Total ticks: {cpu.tick}\n  Output: '{output_text}'",
         file=sys.stderr,
     )
 

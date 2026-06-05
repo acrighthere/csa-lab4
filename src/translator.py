@@ -40,8 +40,8 @@ from isa import (
     encode_instruction,
 )
 
-
 # Tokenizer / pre-processor
+
 
 def strip_comment(line: str) -> str:
     """Remove inline ';' comment and strip whitespace."""
@@ -59,7 +59,6 @@ def parse_int(token: str) -> int:
     if token.startswith("-0x") or token.startswith("-0X"):
         return -int(token[1:], 16)
     return int(token, 10)
-
 
 
 # Assembler
@@ -92,7 +91,6 @@ class Assembler:
         self._current_addr: int = PROG_START_DEFAULT
         self._source_map: dict[int, str] = {}  # addr -> original line
 
-    
     # Public interface
 
     def assemble(self, source: str) -> tuple[dict[int, int], dict[int, str]]:
@@ -110,9 +108,7 @@ class Assembler:
         self._pass2(lines)
         return self._memory, self._source_map
 
-    
     # Pre-processing: macro expansion, conditional compilation
-    
 
     def _preprocess(self, lines: list[str]) -> list[str]:
         """Expand macros and process conditionals."""
@@ -194,9 +190,7 @@ class Assembler:
 
         return result
 
-    
     # Pass 1: determine label addresses
-    
 
     def _pass1(self, lines: list[str]) -> None:
         addr = PROG_START_DEFAULT
@@ -241,9 +235,7 @@ class Assembler:
             # Instruction
             addr += 1
 
-    
     # Pass 2: emit machine code
-    
 
     def _pass2(self, lines: list[str]) -> None:
         addr = PROG_START_DEFAULT
@@ -306,9 +298,7 @@ class Assembler:
             self._emit(addr, word, debug_str)
             addr += 1
 
-    
     # Helpers
-    
 
     def _resolve_operand(self, token: str) -> int:
         """Resolve label or integer token to integer value."""
@@ -362,7 +352,6 @@ class Assembler:
         self._source_map[addr] = comment
 
 
-
 # Binary file I/O
 def write_binary(memory: dict[int, int], path: Path) -> None:
     """Write memory image as binary.
@@ -398,7 +387,6 @@ def write_debug(memory: dict[int, int], source_map: dict[int, str], path: Path) 
             word = memory[addr]
             comment = source_map.get(addr, "")
             f.write(f"{addr:>8}  {word:>10x}  {comment}\n")
-
 
 
 # CLI

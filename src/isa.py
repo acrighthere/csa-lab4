@@ -5,14 +5,11 @@ from enum import IntEnum
 
 
 class Opcode(IntEnum):
-
-
     PUSH = 0x01  # PUSH <imm>   -- push 24-bit sign-extended immediate
     POP = 0x02  # POP          -- discard TOS
     DUP = 0x03  # DUP          -- duplicate TOS
     SWAP = 0x04  # SWAP         -- swap TOS and NOS (next on stack)
     OVER = 0x05  # OVER         -- copy NOS to TOS
-
 
     LOAD = 0x10  # LOAD         -- TOS = mem[TOS]
     STORE = 0x11  # STORE        -- mem[NOS] = TOS; pop two
@@ -75,7 +72,7 @@ PROG_START_DEFAULT = 0x010  # default program start address
 # Instruction word size (bytes)
 INSTR_SIZE = 4
 
-# Data word size 
+# Data word size
 DATA_BITS = 32
 DATA_BYTES = 4
 
