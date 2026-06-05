@@ -200,53 +200,15 @@ python src/translator.py programs/hello.asm /tmp/hello.bin --debug /tmp/hello_de
 
 ### DataPath
 
-```
-          +------------------------------------------------+
-          |               Data Stack (256 x 32b)          |
-          |  push / pop / peek                             |
-          +--------+-------------------+-------------------+
-                   |  TOS              |  NOS
-                   v                  v
-          +--------+------------------+--------+
-          |                  ALU                |
-          |  ADD/SUB/MUL/DIV/MOD/AND/OR/XOR/   |
-          |  NOT/NEG/SHL/SHR/EQ/NEQ/LT/LE/GT/GE|
-          +------------------+------------------+
-                             |  result → push
-                             v
-           +------------------+------------------+
-          |          Memory (65536 x 32b)        |
-          |  Von Neumann (unified instr+data)    |
-          +--------------------------------------+
+![DataPath](scheme/dp4.png)
 
-          +------------------------------------------+
-          |         I/O Ports (port-mapped)           |
-          |  IN port  →  push value from port reg    |
-          |  OUT port ←  pop value to port reg       |
-          +------------------------------------------+
-```
+
 
 ### ControlUnit (Hardwired)
 
-```
-          +-----------------------------------------------+
-          |                 Control Unit                  |
-          |                                               |
-          |  PC ──► [Fetch] ──► IR ──► [Decode] ──►      |
-          |           │                    │              |
-           |           │ fetch ticks        │ dispatch     |
-          |           ▼                    ▼              |
-          |  tick counter          execute + update stack |
-          |  (global, incremented  / memory / PC / flags  |
-          |   by each operation)                          |
-          |                                               |
-          |  [Interrupt Check] ─ at each step()           |
-          |    check schedule → enqueue → enter ISR       |
-          +-----------------------------------------------+
-          Signals (conceptual, not wired in diagram):
-          push, pop, alu_op, mem_read, mem_write,
-          port_in, port_out, ei, di, iret, halt
-```
+![ControlUnit](scheme/cu4ak.png)
+
+
 
 ### Особенности реализации
 
