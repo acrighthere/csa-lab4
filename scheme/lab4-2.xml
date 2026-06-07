@@ -1,4 +1,4 @@
-ntgt<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <mxfile host="app.diagrams.net" pages="2">
   <diagram name="Data Path" id="c0De0XmorUDO2B5tWbY4">
     <mxGraphModel dx="3822" dy="2379" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1050" math="0" shadow="0">
@@ -55,7 +55,7 @@ ntgt<?xml version="1.0" encoding="UTF-8"?>
         <mxCell id="mux_p" parent="1" style="shape=trapezoid;perimeter=trapezoidPerimeter;whiteSpace=wrap;html=1;fixedSize=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;fontStyle=1;direction=west;align=center;verticalAlign=middle;rotation=90;" value="MUX&#xa;next PC" vertex="1">
           <mxGeometry height="80" width="155" x="555" y="855" as="geometry" />
         </mxCell>
-        <mxCell id="lKNkmcoEYTkrftQNH8is-10" edge="1" parent="1" source="cu" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=1;exitDx=0;exitDy=0;" target="mux_p">
+        <mxCell id="lKNkmcoEYTkrftQNH8is-10" edge="1" parent="1" source="cu" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=1;exitDx=0;exitDy=0;endArrow=open;dashed=1;strokeWidth=1.5;" target="mux_p" value="pc_sel">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="1363" y="630" />
@@ -126,7 +126,7 @@ ntgt<?xml version="1.0" encoding="UTF-8"?>
         <mxCell id="e13" edge="1" parent="1" source="pc" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;jumpStyle=arc;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0" target="pcadd" value="">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="c1" edge="1" parent="1" source="cu" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;strokeWidth=1.5;jumpStyle=arc;exitX=0.75;exitY=0;exitDx=0;exitDy=0;" value="tos_sel / operand">
+        <mxCell id="c1" edge="1" parent="1" source="cu" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;dashed=1;strokeWidth=1.5;jumpStyle=arc;exitX=0.75;exitY=0;exitDx=0;exitDy=0;" value="tos_sel / operand">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="1269" y="420" />
@@ -136,14 +136,14 @@ ntgt<?xml version="1.0" encoding="UTF-8"?>
             <mxPoint x="180" y="680" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="c2" edge="1" parent="1" source="cu" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;strokeWidth=1.5;jumpStyle=arc" target="mux_a" value="addr_sel / operand">
+        <mxCell id="c2" edge="1" parent="1" source="cu" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;dashed=1;strokeWidth=1.5;jumpStyle=arc" target="mux_a" value="addr_sel / operand">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="1360" y="280" />
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="c4" edge="1" parent="1" source="cu" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;strokeWidth=1.5;jumpStyle=arc" target="alu" value="alu_op">
+        <mxCell id="c4" edge="1" parent="1" source="cu" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;dashed=1;strokeWidth=1.5;jumpStyle=arc" target="alu" value="alu_op">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="1230" y="510" />
@@ -153,7 +153,7 @@ ntgt<?xml version="1.0" encoding="UTF-8"?>
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="c5" edge="1" parent="1" source="cu" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;strokeWidth=1.5;jumpStyle=arc;" target="ds" value="ds_push / ds_pop">
+        <mxCell id="c5" edge="1" parent="1" source="cu" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;dashed=1;strokeWidth=1.5;jumpStyle=arc;" target="ds" value="ds_push / ds_pop">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="840" y="530" />
@@ -161,7 +161,7 @@ ntgt<?xml version="1.0" encoding="UTF-8"?>
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="c7" edge="1" parent="1" source="cu" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;strokeWidth=1.5;jumpStyle=arc" target="mem" value="mem_rd / mem_wr">
+        <mxCell id="c7" edge="1" parent="1" source="cu" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;dashed=1;strokeWidth=1.5;jumpStyle=arc" target="mem" value="mem_rd / mem_wr">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="1230" y="490" />
@@ -186,7 +186,7 @@ ntgt<?xml version="1.0" encoding="UTF-8"?>
         <mxCell id="lKNkmcoEYTkrftQNH8is-8" edge="1" parent="1" source="pcadd" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=1;exitDx=0;exitDy=0;entryX=0.856;entryY=1.009;entryDx=0;entryDy=0;entryPerimeter=0;" target="mux_p">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="2QbsezexyaYm-dMTo6IX-3" edge="1" parent="1" source="cu" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.165;entryY=0.01;entryDx=0;entryDy=0;entryPerimeter=0;endArrow=open;endFill=0;" target="rs" value="rs_push/rs_pop">
+        <mxCell id="2QbsezexyaYm-dMTo6IX-3" edge="1" parent="1" source="cu" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.165;entryY=0.01;entryDx=0;entryDy=0;entryPerimeter=0;endArrow=open;endFill=0;dashed=1;strokeWidth=1.5;" target="rs" value="rs_push / rs_pop">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="2QbsezexyaYm-dMTo6IX-5" edge="1" parent="1" source="mux_a" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.178;entryY=0.997;entryDx=0;entryDy=0;entryPerimeter=0;" target="mem">

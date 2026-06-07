@@ -206,7 +206,7 @@ python src/translator.py programs/hello.asm /tmp/hello.bin --debug /tmp/hello_de
 
 ### ControlUnit (Hardwired)
 
-![ControlUnit](scheme/cu4ak.png)
+![ControlUnit](scheme/cu4.png)
 
 
 
