@@ -1,12 +1,12 @@
-%define HI     0x200
-%define LO     0x201
-%define CNT    0x202
-%define SC0    0x230
-%define SC1    0x231
+%define HI     0x800
+%define LO     0x804
+%define CNT    0x808
+%define SC0    0x810
+%define SC1    0x814
 
 ; Digit buffer
-%define DIG_BUF  0x210
-%define DIG_LEN  0x224
+%define DIG_BUF  0x900
+%define DIG_LEN  0x9D0
 
 .org 0x000
     .word isr_stub
@@ -84,9 +84,9 @@ _start:
     OUT 1
     HALT
 
-%define PI_VAL  0x540
-%define PI_BUF  0x541
-%define PI_LEN  0x54B
+%define PI_VAL  0x500
+%define PI_BUF  0x540
+%define PI_LEN  0x600
 
 print_int:
     STOREA PI_VAL
@@ -107,6 +107,8 @@ print_int:
     PUSH 48
     ADD
     LOADA PI_LEN
+    PUSH 4
+    MUL
     PUSH PI_BUF
     ADD
     SWAP
@@ -131,6 +133,8 @@ print_int:
     LT
     JNZ .pi_done
     LOADA PI_LEN
+    PUSH 4
+    MUL
     PUSH PI_BUF
     ADD
     LOAD
@@ -143,8 +147,8 @@ print_int:
 .pi_done:
     RET
 
-%define PI6_VAL  0x560
-%define PI6_CNT  0x561
+%define PI6_VAL  0x700
+%define PI6_CNT  0x704
 
 print_int6:
     STOREA PI6_VAL
@@ -166,7 +170,7 @@ print_int6:
     MOD
     PUSH 48
     ADD
-    STOREA 0x542
+    STOREA 0x544
 
     LOADA PI6_VAL
     PUSH 1000
@@ -175,7 +179,7 @@ print_int6:
     MOD
     PUSH 48
     ADD
-    STOREA 0x543
+    STOREA 0x548
 
     LOADA PI6_VAL
     PUSH 100
@@ -184,7 +188,7 @@ print_int6:
     MOD
     PUSH 48
     ADD
-    STOREA 0x544
+    STOREA 0x54C
 
     LOADA PI6_VAL
     PUSH 10
@@ -193,26 +197,26 @@ print_int6:
     MOD
     PUSH 48
     ADD
-    STOREA 0x545
+    STOREA 0x550
 
     LOADA PI6_VAL
     PUSH 10
     MOD
     PUSH 48
     ADD
-    STOREA 0x546
+    STOREA 0x554
 
     LOADA PI_BUF
     OUT 1
-    LOADA 0x542
-    OUT 1
-    LOADA 0x543
-    OUT 1
     LOADA 0x544
     OUT 1
-    LOADA 0x545
+    LOADA 0x548
     OUT 1
-    LOADA 0x546
+    LOADA 0x54C
+    OUT 1
+    LOADA 0x550
+    OUT 1
+    LOADA 0x554
     OUT 1
     RET
 

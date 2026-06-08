@@ -1,6 +1,6 @@
 %define FLAG_DONE   0x200
-%define BUF_LEN     0x201
-%define BUF_START   0x202
+%define BUF_LEN     0x204
+%define BUF_START   0x208
 
 .org 0x000
     .word isr_input
@@ -26,6 +26,8 @@ _start:
 
     DI
     LOADA BUF_LEN
+    PUSH 4
+    MUL
     PUSH BUF_START
     ADD
     PUSH 0
@@ -51,7 +53,7 @@ print_str:
     DUP
     JZ .ps_done
     OUT 1
-    PUSH 1
+    PUSH 4
     ADD
     JMP .ps_loop
 .ps_done:
@@ -80,6 +82,8 @@ isr_input:
     PUSH 253
     GT
     JNZ .skip_store
+    PUSH 4
+    MUL
     PUSH BUF_START
     ADD
     SWAP
@@ -107,7 +111,7 @@ isr_input:
     STOREA FLAG_DONE
     IRET
 
-.org 0x300
+.org 0x600
 msg_prompt:
     .str "What is your name?\n"
 msg_hello:

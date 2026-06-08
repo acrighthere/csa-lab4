@@ -1,19 +1,20 @@
-%define FLAG_DONE  0x200
-%define BUF_LEN    0x201
-%define IBUF       0x202
-%define ARR_LEN    0x400
-%define ARR        0x401
+; Data region placed above the (byte-addressed) code segment.
+%define FLAG_DONE  0x1000
+%define BUF_LEN    0x1004
+%define IBUF       0x1100
+%define ARR_LEN    0x1600
+%define ARR        0x1604
 
-%define S0  0x500
-%define S1  0x501
-%define S2  0x502
-%define S3  0x503
-%define S4  0x504
-%define S5  0x505
-%define S6  0x506
-%define S7  0x507
-%define S8  0x508
-%define S9  0x509
+%define S0  0x2000
+%define S1  0x2004
+%define S2  0x2008
+%define S3  0x200C
+%define S4  0x2010
+%define S5  0x2014
+%define S6  0x2018
+%define S7  0x201C
+%define S8  0x2020
+%define S9  0x2024
 
 .org 0x000
     .word isr_input
@@ -37,6 +38,8 @@ _start:
     DI
 
     LOADA BUF_LEN
+    PUSH 4
+    MUL
     PUSH IBUF
     ADD
     PUSH 0
@@ -73,6 +76,8 @@ parse_ints:
 
     ; store ARR[ARR_LEN] = number
     LOADA ARR_LEN
+    PUSH 4
+    MUL
     PUSH ARR
     ADD
     STOREA S1
@@ -115,7 +120,7 @@ skip_ws:
     RET
 
 .sw_advance:
-    PUSH 1
+    PUSH 4
     ADD
     JMP .sw_loop
 
@@ -144,7 +149,7 @@ parse_num:
     ADD
     STOREA S3           ; S3 = S3*10 + digit
     LOADA S2
-    PUSH 1
+    PUSH 4
     ADD
     STOREA S2           ; advance ptr
     JMP .pn_loop
@@ -156,13 +161,13 @@ parse_num:
     STOREA S0
     RET
 
-%define BS_I    0x510
-%define BS_J    0x511
-%define BS_N    0x512
-%define BS_AJ   0x513
-%define BS_VJ   0x514
-%define BS_AJ1  0x515
-%define BS_VJ1  0x516
+%define BS_I    0x2100
+%define BS_J    0x2104
+%define BS_N    0x2108
+%define BS_AJ   0x210C
+%define BS_VJ   0x2110
+%define BS_AJ1  0x2114
+%define BS_VJ1  0x2118
 
 bubble_sort:
     LOADA ARR_LEN
@@ -193,8 +198,10 @@ bubble_sort:
     GE
     JNZ .bs_next_i
 
-    ; addr_j = ARR + j
+    ; addr_j = ARR + j*4
     LOADA BS_J
+    PUSH 4
+    MUL
     PUSH ARR
     ADD
     STOREA BS_AJ
@@ -202,9 +209,9 @@ bubble_sort:
     LOAD
     STOREA BS_VJ
 
-    ; addr_j1 = addr_j + 1
+    ; addr_j1 = addr_j + 4
     LOADA BS_AJ
-    PUSH 1
+    PUSH 4
     ADD
     STOREA BS_AJ1
     LOADA BS_AJ1
@@ -244,7 +251,7 @@ bubble_sort:
 .bs_done:
     RET
 
-%define PA_I  0x520
+%define PA_I  0x2200
 print_array:
     PUSH 0
     STOREA PA_I
@@ -254,6 +261,8 @@ print_array:
     GE
     JNZ .pa_done
     LOADA PA_I
+    PUSH 4
+    MUL
     PUSH ARR
     ADD
     LOAD
@@ -268,9 +277,9 @@ print_array:
 .pa_done:
     RET
 
-%define PI_VAL  0x530
-%define PI_BUF  0x531
-%define PI_LEN  0x53B
+%define PI_VAL  0x2210
+%define PI_BUF  0x2300
+%define PI_LEN  0x2400
 
 print_int:
     STOREA PI_VAL
@@ -291,6 +300,8 @@ print_int:
     PUSH 48
     ADD
     LOADA PI_LEN
+    PUSH 4
+    MUL
     PUSH PI_BUF
     ADD
     SWAP
@@ -315,6 +326,8 @@ print_int:
     LT
     JNZ .pint_done
     LOADA PI_LEN
+    PUSH 4
+    MUL
     PUSH PI_BUF
     ADD
     LOAD
@@ -333,6 +346,8 @@ isr_input:
     JZ .isr_eof
 
     LOADA BUF_LEN
+    PUSH 4
+    MUL
     PUSH IBUF
     ADD
     SWAP

@@ -33,6 +33,8 @@ import sys
 from pathlib import Path
 
 from isa import (
+    DATA_BYTES,
+    INSTR_SIZE,
     MEMORY_SIZE,
     MNEMONIC_TO_OPCODE,
     PROG_START_DEFAULT,
@@ -225,15 +227,15 @@ class Assembler:
             tokens = line.split()
             if tokens[0] == ".word":
                 values = " ".join(tokens[1:]).split(",")
-                addr += len(values)
+                addr += len(values) * DATA_BYTES
                 continue
             if tokens[0] == ".str":
-                # Extract string literal
+                # Extract string literal (one word per char + null terminator)
                 text = self._extract_string(line)
-                addr += len(text) + 1  # +1 for null terminator
+                addr += (len(text) + 1) * DATA_BYTES
                 continue
             # Instruction
-            addr += 1
+            addr += INSTR_SIZE
 
     # Pass 2: emit machine code
 
@@ -268,16 +270,16 @@ class Assembler:
                     v = v.strip()
                     word = self._resolve_operand(v)
                     self._emit(addr, word & 0xFFFF_FFFF, line)
-                    addr += 1
+                    addr += DATA_BYTES
                 continue
 
             if directive_or_mnemonic == ".STR":
                 text = self._extract_string(line)
                 for ch in text:
                     self._emit(addr, ord(ch), f".str '{ch}'")
-                    addr += 1
+                    addr += DATA_BYTES
                 self._emit(addr, 0, ".str '\\0'")
-                addr += 1
+                addr += DATA_BYTES
                 continue
 
             # Instruction
@@ -296,7 +298,7 @@ class Assembler:
             if operand_str:
                 debug_str += f" {operand_str}(={operand:#06x})"
             self._emit(addr, word, debug_str)
-            addr += 1
+            addr += INSTR_SIZE
 
     # Helpers
 
@@ -345,8 +347,8 @@ class Assembler:
         return "".join(result)
 
     def _emit(self, addr: int, word: int, comment: str = "") -> None:
-        """Store word at address."""
-        if addr >= MEMORY_SIZE:
+        """Store word at byte address (word occupies DATA_BYTES cells)."""
+        if addr + DATA_BYTES > MEMORY_SIZE:
             raise OverflowError(f"Address {addr:#06x} exceeds memory size")
         self._memory[addr] = word & 0xFFFF_FFFF
         self._source_map[addr] = comment

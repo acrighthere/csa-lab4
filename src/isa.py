@@ -65,9 +65,9 @@ class Opcode(IntEnum):
 PORT_INPUT = 0  # read a character from stdin stream
 PORT_OUTPUT = 1  # write a character to stdout stream
 
-# Memory layout
-INT_VECTOR_ADDR = 0x000  # address 0: interrupt vector
-PROG_START_DEFAULT = 0x010  # default program start address
+# Memory layout (byte-addressable)
+INT_VECTOR_ADDR = 0x000  # byte address 0: interrupt vector (one word)
+PROG_START_DEFAULT = 0x010  # default program start byte address
 
 # Instruction word size (bytes)
 INSTR_SIZE = 4
@@ -81,8 +81,9 @@ IMM_BITS = 24
 IMM_MASK = (1 << IMM_BITS) - 1
 IMM_SIGN_BIT = 1 << (IMM_BITS - 1)
 
-# Memory size (words)
-MEMORY_SIZE = 0x10000  # 65536 words
+# Memory size (bytes). Addressing is byte-granular; a machine word spans
+# DATA_BYTES (4) consecutive byte cells, stored big-endian.
+MEMORY_SIZE = 0x40000  # 262144 bytes (== 65536 words)
 
 
 def sign_extend_imm(value: int) -> int:

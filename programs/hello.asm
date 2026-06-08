@@ -18,7 +18,7 @@ print_str:
     DUP
     JZ .done
     OUT 1
-    PUSH 1
+    PUSH 4
     ADD
     JMP .loop
 .done:

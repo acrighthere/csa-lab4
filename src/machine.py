@@ -26,6 +26,8 @@ import sys
 from pathlib import Path
 
 from isa import (
+    DATA_BYTES,
+    INSTR_SIZE,
     INT_VECTOR_ADDR,
     MEMORY_SIZE,
     PORT_INPUT,
@@ -50,10 +52,11 @@ class Processor:
         memory_image: dict[int, int],
         interrupt_schedule: list[tuple[int, int]],
     ) -> None:
-        # --- Memory ---
+        # --- Memory (byte-addressable: one cell == one byte) ---
+        # A machine word occupies DATA_BYTES consecutive cells, big-endian.
         self.memory: list[int] = [0] * MEMORY_SIZE
         for addr, word in memory_image.items():
-            self.memory[addr] = word
+            self._store_word(addr, word)
 
         # --- Data stack ---
         self.dstack: list[int] = []
@@ -123,21 +126,41 @@ class Processor:
             return value - 0x1_0000_0000
         return value
 
-    # Memory access
+    # Memory access (byte-addressable; words span DATA_BYTES cells, big-endian)
+
+    def _load_word(self, addr: int) -> int:
+        """Read a 32-bit word from byte address *addr* (big-endian)."""
+        addr = addr & 0xFFFF_FFFF
+        if addr + DATA_BYTES > MEMORY_SIZE:
+            raise RuntimeError(f"Memory read out of bounds: {addr:#010x}")
+        word = 0
+        for i in range(DATA_BYTES):
+            word = (word << 8) | (self.memory[addr + i] & 0xFF)
+        return word
+
+    def _store_word(self, addr: int, value: int) -> None:
+        """Write a 32-bit word to byte address *addr* (big-endian)."""
+        addr = addr & 0xFFFF_FFFF
+        if addr + DATA_BYTES > MEMORY_SIZE:
+            raise RuntimeError(f"Memory write out of bounds: {addr:#010x}")
+        value &= 0xFFFF_FFFF
+        for i in range(DATA_BYTES):
+            shift = (DATA_BYTES - 1 - i) * 8
+            self.memory[addr + i] = (value >> shift) & 0xFF
 
     def _mem_read(self, addr: int) -> tuple[int, int]:
-        """Read from memory. Returns (value, ticks)."""
-        addr = addr & 0xFFFF_FFFF
-        if addr >= MEMORY_SIZE:
-            raise RuntimeError(f"Memory read out of bounds: {addr:#010x}")
-        return self.memory[addr], 1
+        """Read a word from memory. Returns (value, ticks).
+
+        The single memory port serves one word access per tick.
+        """
+        return self._load_word(addr), 1
 
     def _mem_write(self, addr: int, value: int) -> int:
-        """Write to memory. Returns ticks."""
-        addr = addr & 0xFFFF_FFFF
-        if addr >= MEMORY_SIZE:
-            raise RuntimeError(f"Memory write out of bounds: {addr:#010x}")
-        self.memory[addr] = value & 0xFFFF_FFFF
+        """Write a word to memory. Returns ticks.
+
+        The single memory port serves one word access per tick.
+        """
+        self._store_word(addr, value)
         return 1
 
     # Interrupt delivery
@@ -167,7 +190,7 @@ class Processor:
         self.interrupts_enabled = False
         self.in_interrupt = True
         # Jump to interrupt vector
-        handler_addr = self.memory[INT_VECTOR_ADDR]
+        handler_addr = self._load_word(INT_VECTOR_ADDR)
         self._log(f"  [INT] entering ISR at {handler_addr:#06x}, saved PC={self.pc:#06x}")
         self.pc = handler_addr
         self.tick += 2  # interrupt acknowledge overhead
@@ -180,7 +203,7 @@ class Processor:
         self.tick += ticks
         self.ir = val
         opcode, operand = decode_instruction(val)
-        self.pc += 1
+        self.pc += INSTR_SIZE
         return opcode, operand
 
     # Execute one instruction

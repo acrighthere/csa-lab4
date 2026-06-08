@@ -1,9 +1,9 @@
 %define LIMIT    4000000
 %define FIB_A    0x200      ; F(n-2)
-%define FIB_B    0x201      ; F(n-1)
-%define FIB_C    0x202      ; F(n) current
-%define SUM_LO   0x203      ; lower 32 bits of sum
-%define SUM_HI   0x204      ; upper 32 bits of sum (double precision)
+%define FIB_B    0x204      ; F(n-1)
+%define FIB_C    0x208      ; F(n) current
+%define SUM_LO   0x20C      ; lower 32 bits of sum
+%define SUM_HI   0x210      ; upper 32 bits of sum (double precision)
 
 .org 0x000
     .word isr_stub
@@ -60,9 +60,9 @@ _start:
     OUT 1
     HALT
 
-%define PRI_VAL  0x210
-%define PRI_BUF  0x211
-%define PRI_LEN  0x21B
+%define PRI_VAL  0x300
+%define PRI_BUF  0x304
+%define PRI_LEN  0x360
 
 print_int:
     STOREA PRI_VAL
@@ -83,6 +83,8 @@ print_int:
     PUSH 48
     ADD
     LOADA PRI_LEN
+    PUSH 4
+    MUL
     PUSH PRI_BUF
     ADD
     SWAP
@@ -107,6 +109,8 @@ print_int:
     LT
     JNZ .pi_done
     LOADA PRI_LEN
+    PUSH 4
+    MUL
     PUSH PRI_BUF
     ADD
     LOAD

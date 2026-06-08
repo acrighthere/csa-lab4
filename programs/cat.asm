@@ -1,5 +1,5 @@
 %define FLAG_ADDR  0x200
-%define CHAR_ADDR  0x201
+%define CHAR_ADDR  0x204
 %define EOF_CHAR   0
 
 .org 0x000
