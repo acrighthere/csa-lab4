@@ -254,7 +254,7 @@ pytest tests/test_golden.py --update-goldens
 | `cat`              | `hello\0` (расписание прерываний) | `hello` |
 | `hello_user_name`  | `Alice\n` (расписание прерываний) | `What is your name?\nHello, Alice!\n` |
 | `sort`             | `5 3 1 4 2\0` (расписание прерываний) | `1\n2\n3\n4\n5\n` |
-| `prob2`            | — | `4613732\n` |
+| `prob2`            | — | `25164150\n` |
 | `double_precision` | — | `1099511627776\n` |
 
 ### Примеры работы
@@ -302,13 +302,14 @@ tick=    13 PC=0x0034 ISR JZ               64  stk=[104, 104]
 tick=    15 PC=0x0038 ISR OUT               1  stk=[104]
 ```
 
-#### prob2 (Euler #2)
+#### prob2 (Euler #6 — Sum Square Difference)
+
+Разность между квадратом суммы и суммой квадратов первых 100 натуральных чисел:
+`(1+2+…+100)² − (1²+2²+…+100²) = 25502500 − 338350 = 25164150`.
 
 ```
 $ python src/machine.py prob2.bin /dev/null
-4613732
-
-Total ticks: 1700
+25164150
 ```
 
 #### double_precision (64-бит арифметика)

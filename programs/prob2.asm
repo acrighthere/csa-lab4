@@ -1,9 +1,7 @@
-%define LIMIT    4000000
-%define FIB_A    0x200      ; F(n-2)
-%define FIB_B    0x204      ; F(n-1)
-%define FIB_C    0x208      ; F(n) current
-%define SUM_LO   0x20C      ; lower 32 bits of sum
-%define SUM_HI   0x210      ; upper 32 bits of sum (double precision)
+%define N        100        ; first N natural numbers
+%define I        0x200      ; loop counter i
+%define SUM      0x204      ; running sum of i
+%define SUMSQ    0x208      ; running sum of i*i
 
 .org 0x000
     .word isr_stub
@@ -13,48 +11,46 @@ _start:
     DI
 
     PUSH 1
-    STOREA FIB_A
-    PUSH 2
-    STOREA FIB_B
+    STOREA I
     PUSH 0
-    STOREA SUM_LO
+    STOREA SUM
     PUSH 0
-    STOREA SUM_HI
+    STOREA SUMSQ
 
-
-.fib_loop:
-    LOADA FIB_B
-    PUSH LIMIT
+.loop:
+    LOADA I
+    PUSH N
     GT
-    JNZ .done
+    JNZ .done               ; while i <= N
 
-    ; if b % 2 == 0: sum += b
-    LOADA FIB_B
-    PUSH 2
-    MOD
-    JNZ .not_even
-
-    ; sum_lo += b, handle carry
-    LOADA SUM_LO
-    LOADA FIB_B
+    ; sum += i
+    LOADA SUM
+    LOADA I
     ADD
-    STOREA SUM_LO
+    STOREA SUM
 
-.not_even:
-    ; Next Fibonacci: c = a + b, a = b, b = c
-    LOADA FIB_A
-    LOADA FIB_B
-    ADD                     ; c = a + b
-    STOREA FIB_C
-    LOADA FIB_B
-    STOREA FIB_A
-    LOADA FIB_C
-    STOREA FIB_B
-    JMP .fib_loop
+    ; sumsq += i*i
+    LOADA SUMSQ
+    LOADA I
+    LOADA I
+    MUL
+    ADD
+    STOREA SUMSQ
+
+    ; i += 1
+    LOADA I
+    PUSH 1
+    ADD
+    STOREA I
+    JMP .loop
 
 .done:
-    ; Print SUM_LO
-    LOADA SUM_LO
+    ; result = (sum)^2 - (sum of squares)
+    LOADA SUM
+    LOADA SUM
+    MUL
+    LOADA SUMSQ
+    SUB
     CALL print_int
     PUSH 10
     OUT 1
