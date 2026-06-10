@@ -72,7 +72,6 @@ parse_ints:
     ; parse one decimal number
     LOADA S0
     CALL parse_num
-    LOADA S0
 
     ; store ARR[ARR_LEN] = number
     LOADA ARR_LEN
@@ -360,7 +359,7 @@ isr_input:
     IRET
 
 .isr_eof:
-    POP                     
+    POP
     PUSH 1
     STOREA FLAG_DONE
     IRET
