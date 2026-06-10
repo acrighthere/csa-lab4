@@ -1,0 +1,131 @@
+in_source: |
+  ; demo_features: демонстрация особенностей варианта.
+  ;   - препроцессор: %define, %macro/%endmacro, %ifdef/%else/%endif
+  ;   - стековые идиомы: OVER, SWAP (без обращений к памяти)
+  ;   - сдвиги (SHL), отрицательный immediate (PUSH -1), NEG
+  ; Ожидаемый вывод: "751\n"
+
+  %define ONE 1
+
+  %macro DOUBLE          ; TOS = TOS * 2 через сдвиг
+      PUSH ONE
+      SHL
+  %endmacro
+
+  .org 0x000
+      .word isr_stub
+
+  .org 0x010
+  _start:
+      DI
+
+      ; 1) макрос + сдвиги + отрицательный immediate: 2*2*2 - 1 = 7
+      PUSH 2
+      DOUBLE             ; 4
+      DOUBLE             ; 8
+      PUSH -1
+      ADD                ; 7
+      PUSH 48
+      ADD
+      OUT 1              ; '7'
+
+      ; 2) OVER: вычислить a+b, не теряя a и b      stk: []
+      PUSH 3             ; a                        stk: [3]
+      PUSH 2             ; b                        stk: [3, 2]
+      OVER               ; копия a                  stk: [3, 2, 3]
+      OVER               ; копия b                  stk: [3, 2, 3, 2]
+      ADD                ; a+b = 5                  stk: [3, 2, 5]
+      PUSH 48
+      ADD
+      OUT 1              ; '5'                      stk: [3, 2]
+
+      ; 3) SWAP + NEG: -(b - a) = a - b = 1
+      SWAP               ;                          stk: [2, 3]
+      SUB                ; 2 - 3 = -1               stk: [-1]
+      NEG                ; 1                        stk: [1]
+      PUSH 48
+      ADD
+      OUT 1              ; '1'                      stk: []
+
+      ; 4) условная компиляция: эта ветка попадает в бинарник
+  %ifdef ONE
+      PUSH 10
+      OUT 1              ; '\n'
+  %else
+      PUSH 33
+      OUT 1              ; '!' — этой ветки в машинном коде нет
+  %endif
+
+      HALT
+
+  isr_stub:
+      IRET
+machine_code: |2
+   Address         HEX  Mnemonic
+  ------------------------------------------------------------
+         0          80  .word isr_stub
+        16    61000000  DI
+        20     1000002  PUSH 2(=0x0002)
+        24     1000001  PUSH ONE(=0x0001)
+        28    2a000000  SHL
+        32     1000001  PUSH ONE(=0x0001)
+        36    2a000000  SHL
+        40     1ffffff  PUSH -1(=-0x001)
+        44    20000000  ADD
+        48     1000030  PUSH 48(=0x0030)
+        52    20000000  ADD
+        56    51000001  OUT 1(=0x0001)
+        60     1000003  PUSH 3(=0x0003)
+        64     1000002  PUSH 2(=0x0002)
+        68     5000000  OVER
+        72     5000000  OVER
+        76    20000000  ADD
+        80     1000030  PUSH 48(=0x0030)
+        84    20000000  ADD
+        88    51000001  OUT 1(=0x0001)
+        92     4000000  SWAP
+        96    21000000  SUB
+       100    29000000  NEG
+       104     1000030  PUSH 48(=0x0030)
+       108    20000000  ADD
+       112    51000001  OUT 1(=0x0001)
+       116     100000a  PUSH 10(=0x000a)
+       120    51000001  OUT 1(=0x0001)
+       124    47000000  HALT
+       128    62000000  IRET
+output: |
+  751
+out_log: |-
+  tick=     1 PC=0x0010     DI                0  stk=[]
+  tick=     3 PC=0x0014     PUSH              2  stk=[]
+  tick=     5 PC=0x0018     PUSH              1  stk=[2]
+  tick=     7 PC=0x001c     SHL               0  stk=[2, 1]
+  tick=     9 PC=0x0020     PUSH              1  stk=[4]
+  tick=    11 PC=0x0024     SHL               0  stk=[4, 1]
+  tick=    13 PC=0x0028     PUSH             -1  stk=[8]
+  tick=    15 PC=0x002c     ADD               0  stk=[8, 4294967295]
+  tick=    17 PC=0x0030     PUSH             48  stk=[7]
+  tick=    19 PC=0x0034     ADD               0  stk=[7, 48]
+    [OUT] port=1 char='7' (0x37)
+  tick=    21 PC=0x0038     OUT               1  stk=[55]
+  tick=    23 PC=0x003c     PUSH              3  stk=[]
+  tick=    25 PC=0x0040     PUSH              2  stk=[3]
+  tick=    27 PC=0x0044     OVER              0  stk=[3, 2]
+  tick=    29 PC=0x0048     OVER              0  stk=[3, 2, 3]
+  tick=    31 PC=0x004c     ADD               0  stk=[3, 2, 3, 2]
+  tick=    33 PC=0x0050     PUSH             48  stk=[3, 2, 5]
+  tick=    35 PC=0x0054     ADD               0  stk=[3, 2, 5, 48]
+    [OUT] port=1 char='5' (0x35)
+  tick=    37 PC=0x0058     OUT               1  stk=[3, 2, 53]
+  tick=    39 PC=0x005c     SWAP              0  stk=[3, 2]
+  tick=    41 PC=0x0060     SUB               0  stk=[2, 3]
+  tick=    43 PC=0x0064     NEG               0  stk=[4294967295]
+  tick=    45 PC=0x0068     PUSH             48  stk=[1]
+  tick=    47 PC=0x006c     ADD               0  stk=[1, 48]
+    [OUT] port=1 char='1' (0x31)
+  tick=    49 PC=0x0070     OUT               1  stk=[49]
+  tick=    51 PC=0x0074     PUSH             10  stk=[]
+    [OUT] port=1 char='
+  ' (0x0a)
+  tick=    53 PC=0x0078     OUT               1  stk=[10]
+  tick=    55 PC=0x007c     HALT              0  stk=[]
