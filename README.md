@@ -224,7 +224,6 @@ python src/translator.py programs/hello.asm /tmp/hello.bin --debug /tmp/hello_de
 - Прерывания обрабатываются через очередь `_interrupt_queue`: символы из расписания ставятся в очередь в порядке поступления; одно прерывание за раз (пока не выполнен IRET).
 - ISR в журнале помечается флагом ` ISR`.
 
----
 
 ## Тестирование
 
@@ -256,6 +255,7 @@ pytest tests/test_golden.py --update-goldens
 | `sort`             | `5 3 1 4 2\0` (расписание прерываний) | `1\n2\n3\n4\n5\n` |
 | `prob2`            | — | `25164150\n` |
 | `double_precision` | — | `1099511627776\n` |
+| `demo_features`    | — | `751\n` (особенности варианта: `%macro`, `%ifdef`, `OVER`/`SWAP`, `SHL`, отрицательный immediate) |
 
 ### Примеры работы
 
@@ -337,17 +337,19 @@ Lab4AK/
 │   ├── hello_user_name.asm
 │   ├── sort.asm
 │   ├── prob2.asm
-│   └── double_precision.asm
+│   ├── double_precision.asm
+│   └── demo_features.asm
 ├── tests/
 │   ├── conftest.py     # --update-goldens flag
-│   ├── test_golden.py  # 6 golden tests (pytest)
+│   ├── test_golden.py  # 7 golden tests (pytest)
 │   └── golden/
 │       ├── hello.yml
 │       ├── cat.yml
 │       ├── hello_user_name.yml
 │       ├── sort.yml
 │       ├── prob2.yml
-│       └── double_precision.yml
+│       ├── double_precision.yml
+│       └── demo_features.yml
 ├── .github/workflows/
 │   └── ci.yml          # CI: ruff + mypy + pytest
 ├── pyproject.toml      # ruff/mypy/pytest config + pyyaml dep

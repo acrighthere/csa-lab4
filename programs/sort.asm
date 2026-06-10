@@ -1,4 +1,3 @@
-; Data region placed above the (byte-addressed) code segment.
 %define FLAG_DONE  0x1000
 %define BUF_LEN    0x1004
 %define IBUF       0x1100

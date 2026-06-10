@@ -1,5 +1,4 @@
 in_source: |
-  ; Data region placed above the (byte-addressed) code segment.
   %define HI     0x800
   %define LO     0x804
   %define CNT    0x808

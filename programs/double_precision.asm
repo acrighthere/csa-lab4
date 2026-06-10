@@ -4,7 +4,7 @@
 %define SC0    0x810
 %define SC1    0x814
 
-; Digit buffer
+
 %define DIG_BUF  0x900
 %define DIG_LEN  0x9D0
 

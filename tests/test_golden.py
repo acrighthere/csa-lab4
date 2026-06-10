@@ -59,6 +59,7 @@ CASES: list[tuple[str, str, int]] = [
     ),
     ("prob2", "", 50_000),
     ("double_precision", "", 100_000),
+    ("demo_features", "", 10_000),
 ]
 
 
